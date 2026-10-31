@@ -38,13 +38,14 @@ public/icons.svg, public/images/personas/     Icon/persona images referenced by 
 docs/                                         Spec documents
 ```
 
-This repository contains **only what's been designated for public release.** The generic atomic
-components (`Button`, `Select`, `Tabs`, etc.) these components depend on aren't here — they're in
-[GB-HandOff](https://github.com/skey290/GB-HandOff) — you'll need that repo alongside this one to actually run it.
+This repository ([GB-HandOff](https://github.com/skey290/GB-HandOff)) is self-contained — it
+includes the generic atomic components (`Button`, `Select`, `Tabs`, etc. under `components/ui/`)
+these data-viz components depend on, so `npm install` here is all you need to run it.
 
-Compass (`compass-dial`, `compass-sphere`, `compass-analysis`, etc.) isn't in this repo yet — its
-Figma file is still being reworked, so it lives in the private GB-Review repo until it's ready to
-hand off.
+It contains **only what's been designated for public release.** Compass
+(`compass-dial`, `compass-sphere`, `compass-analysis`, etc.) isn't in this repo yet — its Figma
+file is still being reworked, so it lives in the private GB-Review repo until it's ready to hand
+off.
 
 ## Read this first
 
