@@ -13,8 +13,7 @@ export interface GoalEditDialogProps extends GoalSettingProps {
 
 /**
  * "My goal" 편집 모달 — `GoalSetting`을 그대로 감싼다. Content Studio와
- * Know Thyself가 동일 Goal 데이터를 공유하므로([[project_goal_shared_know_thyself_content_studio]])
- * 양쪽 리뷰 페이지가 이 공용 래퍼를 함께 쓴다.
+ * Know Thyself가 동일 Goal 데이터를 공유하므로 양쪽에서 이 공용 래퍼를 쓴다.
  */
 export function GoalEditDialog({
   open,

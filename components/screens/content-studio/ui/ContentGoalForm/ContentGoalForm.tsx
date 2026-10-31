@@ -136,7 +136,7 @@ function FrequencyControl({
   );
 }
 
-/** `docs/components/content-goal-form.md`에서 전체 스펙 확인. Figma: Content goal setting (node-id 8832:7591). 모달 틀은 `components/review/shared/content-goal-dialog.tsx`가 이 컴포넌트를 감싼다 */
+/** `docs/components/content-goal-form.md`에서 전체 스펙 확인. Figma: Content goal setting (node-id 8832:7591). 모달 틀은 GB-Review 레포의 `components/review/shared/content-goal-dialog.tsx`가 이 컴포넌트를 감싼다 */
 export function ContentGoalForm({
   onClose,
   contentGoal,

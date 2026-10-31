@@ -2,9 +2,11 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
+import { Blocks, Compass, Home, UserRoundSearch } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { Gnb } from "@/components/app/gnb";
+import { createSpriteIcon } from "@/lib/sprite-icon";
+import { Gnb, type GnbItem } from "@/components/app/gnb";
 import { Button } from "@/components/ui/button";
 import { ButtonGroup } from "@/components/ui/button-group";
 import type { CalendarRangeValue } from "@/components/ui/calendar";
@@ -15,12 +17,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Toggle } from "@/components/ui/toggle";
-import { AnalysisView } from "@/components/review/content-studio/analysis-view";
-import { PostingModalDialog } from "@/components/review/content-studio/posting-modal-dialog";
-import { ProcessingModal } from "@/components/review/content-studio/processing-modal";
+import { PostingModalDialog } from "@/components/screens/content-studio/posting-modal-dialog";
+import { ProcessingModal } from "@/components/screens/content-studio/processing-modal";
 import { PostCard } from "@/components/screens/content-studio/ui/PostCard";
-import { PostEditDialog } from "@/components/review/content-studio/post-edit-dialog";
+import { PostEditDialog } from "@/components/screens/content-studio/post-edit-dialog";
 import { IMAGE_STYLE_OPTIONS } from "@/components/screens/content-studio/ui/PostingModal";
 import {
   SchedulePanel,
@@ -34,11 +34,11 @@ import {
   type ScheduleTimeSlotValue,
   type ScheduleTimeSlotsByRepeatType,
 } from "@/components/screens/content-studio/ui/ScheduleSettingsPanel";
-import { IncompleteProfileDialog } from "@/components/review/content-studio/incomplete-profile-dialog";
-import { GoalEditDialog } from "@/components/review/shared/goal-edit-dialog";
-import { ContentGoalDialog } from "@/components/review/shared/content-goal-dialog";
-import { ToneOfVoiceDialog } from "@/components/review/shared/tone-of-voice-dialog";
+import { IncompleteProfileDialog } from "@/components/screens/content-studio/incomplete-profile-dialog";
 import {
+  GoalEditDialog,
+  ContentGoalDialog,
+  ToneOfVoiceDialog,
   SELF_OPTIONS,
   getSelfImage,
   getSelfLabel,
@@ -50,7 +50,7 @@ import {
   useToneOfVoice,
   type ContentGoalData,
   type ToneOfVoiceData,
-} from "@/components/review/shared/self-goal-data";
+} from "@/components/app/goal-setting";
 import {
   createCustomIntervalSlot,
   createGeneratedPosts,
@@ -63,22 +63,31 @@ import {
   type Post,
   type PostPlatform,
   type ScheduleSlot,
-} from "@/components/review/content-studio/data";
+} from "@/components/screens/content-studio/data";
 
-import { REVIEW_GNB_ITEMS, REVIEW_GNB_PATHS } from "../_lib/gnb-items";
+const AssetIcon = createSpriteIcon("asset-icon");
 
-// gabrielle-ai.com/content-studio 라이브 사이트 카피본
-// (`docs/GB_Content_Studio.md` 전체 16부 기준). 기존 `app/*` 경로에
-// Content Studio Figma WIP가 없어 새로 작성했다.
-//
-// 의도적 단순화(사전 고지, Phase 3 계획 보고 참고):
-// - Funnel Analysis 상세는 플랫폼별 세부 수치 테이블을 목업 수준으로 간소화.
-// - 멀티계정 캡션은 문서 확정 사항대로 계정 간 복제(개별 수정 불가)로 구현.
+const GNB_ITEMS: GnbItem[] = [
+  { id: "dashboard", icon: Home, label: "Dashboard" },
+  { id: "assets", icon: AssetIcon, label: "Self" },
+  { id: "compass", icon: Compass, label: "Compass" },
+  { id: "contents-studio", icon: Blocks, label: "Content Studio" },
+  { id: "know-thyself", icon: UserRoundSearch, label: "Know Thyself" },
+];
+
+// Dashboard/Know Thyself have no production route yet — only navigate where
+// a real page exists.
+const GNB_PATHS: Record<string, string> = {
+  assets: "/assets",
+  compass: "/compass",
+  "contents-studio": "/content-studio",
+};
+
+// gabrielle-ai.com/content-studio 라이브 사이트 카피본의 "Content" 탭.
+// Analysis 탭/Archive는 핸드오프 범위 밖이라 포함하지 않는다.
 
 // 좌측 패널/우측 콘텐츠 영역을 각자 색이 다른 패널로 나누지 않고, 스크롤
 // 가능한 캔버스 전체가 하나로 이어진 배경처럼 보이도록 하는 레이어.
-// Self/Compass의 dotted canvas 배경(dark 전용)과 같은 구조를 light 톤
-// 토큰으로 적용한 버전.
 function DottedBackground() {
   return (
     <div
@@ -141,10 +150,9 @@ const DEFAULT_SCHEDULE_DAY_OF_MONTH = "";
 const DEFAULT_SCHEDULE_EVERY_COUNT = "";
 const DEFAULT_SCHEDULE_EVERY_UNIT = "days";
 
-export default function ReviewContentStudioPage() {
+export default function ContentStudioPage() {
   const router = useRouter();
   const [gnbExpanded, setGnbExpanded] = React.useState(false);
-  const [activeTab, setActiveTab] = React.useState(1);
   const [selfValue, setSelfValue] = React.useState("data-scientist");
 
   // Self마다 독립된 포스트/스케줄을 갖는다 — 한 번도 생성한 적 없는 self는
@@ -403,7 +411,6 @@ export default function ReviewContentStudioPage() {
       );
     });
     setProcessingCount(null);
-    setActiveTab(1);
   };
 
   const computeNextScheduleSlots = (): Omit<ScheduleSlot, "postId">[] => {
@@ -573,9 +580,12 @@ export default function ReviewContentStudioPage() {
       <Gnb
         expanded={gnbExpanded}
         onExpandedChange={setGnbExpanded}
-        items={REVIEW_GNB_ITEMS}
+        items={GNB_ITEMS}
         activeId="contents-studio"
-        onItemSelect={(id) => router.push(REVIEW_GNB_PATHS[id] ?? "/review")}
+        onItemSelect={(id) => {
+          const path = GNB_PATHS[id];
+          if (path) router.push(path);
+        }}
         colorScheme="light"
         className="z-4"
       />
@@ -583,29 +593,6 @@ export default function ReviewContentStudioPage() {
       <div className="relative z-4 flex min-w-0 flex-1 flex-col">
         <div className="flex min-h-0 flex-1 overflow-hidden">
           <div className="flex h-full w-[380px] shrink-0 flex-col">
-            <div className="flex items-center px-[var(--gb-spacing-5)] py-[var(--gb-spacing-4)]">
-              <Toggle
-                type="text"
-                items={[
-                  {
-                    text: "Content",
-                    pressed: activeTab === 1,
-                    onPressedChange: () => setActiveTab(1),
-                  },
-                  {
-                    text: "Analysis",
-                    pressed: activeTab === 0,
-                    onPressedChange: () => setActiveTab(0),
-                  },
-                ]}
-                trailingAction={{
-                  icon: "archive-icon",
-                  "aria-label": "Archive",
-                  onClick: () => router.push("/review/content-studio/archive"),
-                }}
-              />
-            </div>
-
             <div className="flex min-h-0 flex-1 flex-col gap-[var(--gb-spacing-5)] py-[var(--gb-spacing-5)]">
               <ProfileCard
                 className="shrink-0"
@@ -743,22 +730,15 @@ export default function ReviewContentStudioPage() {
               <ButtonGroup
                 type="menu"
                 activeId="contents-studio"
-                onActiveChange={(id) =>
-                  router.push(
-                    REVIEW_GNB_PATHS[id === "home" ? "dashboard" : id] ??
-                      "/review",
-                  )
-                }
+                onActiveChange={(id) => {
+                  const path = GNB_PATHS[id === "home" ? "dashboard" : id];
+                  if (path) router.push(path);
+                }}
               />
             </div>
 
             <div className="min-h-0 flex-1 overflow-y-auto">
-              {activeTab === 0 ? (
-                <AnalysisView
-                  hasPosts={hasAnyPost}
-                  onCreatePosts={() => requestGeneration({ defaultCount: 9 })}
-                />
-              ) : !hasAnyPost ? (
+              {!hasAnyPost ? (
                 <div className="flex h-full w-full flex-col items-center justify-center gap-[var(--gb-spacing-4)]">
                   <p className="text-lg-semi-bold text-[var(--gb-text-default)]">
                     Ready to create your posts?

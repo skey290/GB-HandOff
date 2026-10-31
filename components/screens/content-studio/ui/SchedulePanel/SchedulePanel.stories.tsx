@@ -92,7 +92,7 @@ function formatTimeSlots(slots: ScheduleTimeSlotValue[]): string[] {
     .map((slot) => `${slot.time || "11:00"} ${slot.period}`);
 }
 
-/** One flat row — mirrors the real page's `ScheduleSlot` (components/review/content-studio/data.ts),
+/** One flat row — mirrors the real page's `ScheduleSlot` (GB-Review repo's components/review/content-studio/data.ts),
  * just with `type` inlined instead of looked up from a separate `Post`. */
 interface DemoSlot {
   id: number;
@@ -162,10 +162,10 @@ const DEFAULT_SLOTS: DemoSlot[] = [
 ];
 
 // The "Add Schedule" date math below is a demo-local re-implementation of
-// components/review/content-studio/data.ts's createNextDaySlots/
+// GB-Review repo's components/review/content-studio/data.ts's createNextDaySlots/
 // createNextWeekSlots/createNextMonthSlot/createCustomIntervalSlot, kept
 // local since components/screens/content-studio/ui/* (generic UI) shouldn't import
-// from components/review/* (app-specific).
+// from the GB-Review repo's components/review/* (app-specific).
 const WEEKDAY_IDS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
 
 function parseSlotDate(date: string): Date {

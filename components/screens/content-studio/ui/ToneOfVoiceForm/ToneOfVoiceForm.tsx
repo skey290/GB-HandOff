@@ -66,7 +66,7 @@ const REFERENCE_TEXT_PLACEHOLDER =
   "Or paste your post, writing, or AI chat text here.";
 const PERSONALITY_DESCRIPTION = "Not MBTI — e.g. Soft, Playful, Warm.";
 
-/** `docs/components/tone-of-voice-form.md`에서 전체 스펙 확인. Figma: Tone of voice setting (node-id 8832:7608). 모달 틀은 `components/review/shared/tone-of-voice-dialog.tsx`가 이 컴포넌트를 감싼다 */
+/** `docs/components/tone-of-voice-form.md`에서 전체 스펙 확인. Figma: Tone of voice setting (node-id 8832:7608). 모달 틀은 GB-Review 레포의 `components/review/shared/tone-of-voice-dialog.tsx`가 이 컴포넌트를 감싼다 */
 export function ToneOfVoiceForm({
   onClose,
   referenceFile,

@@ -47,7 +47,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Content Goal/Strategy 편집 폼 — 모달 틀이 아니라 내용만 담은 패널. 실제 모달로 쓸 때는 components/review/shared/content-goal-dialog.tsx가 Dialog로 감싼다.",
+          "Content Goal/Strategy 편집 폼 — 모달 틀이 아니라 내용만 담은 패널. 실제 모달로 쓸 때는 GB-Review 레포의 components/review/shared/content-goal-dialog.tsx가 Dialog로 감싼다.",
       },
     },
   },
