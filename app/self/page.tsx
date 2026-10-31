@@ -48,7 +48,7 @@ const GNB_ITEMS: GnbItem[] = [
 // Dashboard/Know Thyself have no production route yet — only navigate where
 // a real page exists.
 const GNB_PATHS: Record<string, string> = {
-  assets: "/assets",
+  assets: "/self",
   "contents-studio": "/content-studio",
 };
 

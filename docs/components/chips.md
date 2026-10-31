@@ -173,7 +173,7 @@ The chip root needs `position: relative` for the badge to anchor to it.
 Two consumers import Chips:
 
 - **ChatboxComposer** (`components/app/chatbox-composer`): when `variant === "chips"`, renders the filter list as Chips inside the Chatbox slot. It maps `CHIP_LABELS = ["All", "Image", "Text"]`, fixes `variant="secondary"`, drives single selection with `selected={currentChip === index}`, forwards `disabled`, and calls `handleChipClick(index)` on click.
-- **`app/assets/page.tsx`**: a two-chip filter row (`Brand Kit` / `Content`), same `variant="secondary"` + `selected` pattern.
+- **`app/self/page.tsx`**: a two-chip filter row (`Brand Kit` / `Content`), same `variant="secondary"` + `selected` pattern.
 
 The first two consumers follow the same established pattern: "map a list of labels, toggle single selection through `selected`". No consumer uses `showDeleteIcon` yet; it is verified only by stories and tests.
 
