@@ -1,14 +1,14 @@
 # Gabrielle Dashboard — 화면/플로우 종합본
 
-> 이 문서는 GB_Compass.md(지표 설계 스펙)와 달리 별도의 원본 스펙 문서가 없어, Figma 파일(GB_Dashboard)의 화면/플로우를 역으로 분석해 정리한 문서다. GB_Assets.md/GB_Content_Studio.md/GB_Know_Thyself.md와 동일한 방식으로 작성한다.
+> 이 문서는 GB_Compass.md(지표 설계 스펙)와 달리 별도의 원본 스펙 문서가 없어, Figma 파일(GB_Dashboard)의 화면/플로우를 역으로 분석해 정리한 문서다. GB_Self.md/GB_Content_Studio.md/GB_Know_Thyself.md와 동일한 방식으로 작성한다.
 > 용어 원칙: "persona" 사용 금지, "self"(내부) / "identity"(사용자 대상 카피)만 사용 (GB_all.md 4절).
 
 ## 0. 모듈 정의
 
-- GB_all.md에는 "Dashboard"라는 별도 모듈이 명시적으로 정의되어 있지 않다 — GNB 네비게이션 항목으로만 등장(Dashboard/Assets/Compass/Contents Studio/Know Thyself 5개 중 하나).
+- GB_all.md에는 "Dashboard"라는 별도 모듈이 명시적으로 정의되어 있지 않다 — GNB 네비게이션 항목으로만 등장(Dashboard/Self/Compass/Contents Studio/Know Thyself 5개 중 하나).
 - 화면 구성상 Dashboard는 **홈(진입) 화면**으로, 사용자의 여러 Self를 한눈에 보여주는 원형(8슬롯) 시각화가 핵심이다. GB_all.md 5.3절 Compass Home이 설명한 "파티클이 뭉쳐 하나의 구체(sphere)를 이루는 브랜드 시그니처 모먼트"와 유사한 성격의 시각화가 Compass가 아닌 **Dashboard(홈)**에 구현되어 있다 — Compass Home과 Dashboard가 동일한 시각화 컨셉을 공유하거나 역할이 재배치된 것으로 추정(5부 Open Items 참고, 번호는 추후 확정).
 - 핵심 UI: 중앙에 8개 슬롯("Part/self" 컴포넌트)이 방사형으로 배치된 원형 차트. 각 슬롯은 사용자가 만든 Self를 표현하며, 아직 만들지 않은 슬롯은 "No Self" 점선 placeholder로 표시된다. 호버하는 대상(Self 아바타/성장 아크/빈 슬롯/빈 링 영역)에 따라 중앙 텍스트와 배지 내용이 동적으로 바뀐다.
-- GNB: 좌측에 홈/Asset/Compass/Content Studio/Know Thyself 5개 모듈 아이콘이 상시 노출되는 축약형 사이드바 + 상단 "Floating pill"(홈 아이콘 + Assets/Compass/Content Studio 바로가기) + 우상단 "Floating profile" 아바타, 이렇게 3종의 내비게이션이 동시에 존재.
+- GNB: 좌측에 홈/Self/Compass/Content Studio/Know Thyself 5개 모듈 아이콘이 상시 노출되는 축약형 사이드바 + 상단 "Floating pill"(홈 아이콘 + Self/Compass/Content Studio 바로가기) + 우상단 "Floating profile" 아바타, 이렇게 3종의 내비게이션이 동시에 존재.
 
 ## 1. 대시보드 호버할 때 — 포스팅 분석없음
 
@@ -52,9 +52,9 @@
 2개 화면.
 
 1. **기본 상태** — 3부 ①과 동일한 8개 Self 완성 대시보드.
-2. **GNB + Floating profile 동시 오픈** — 좌상단 GNB와 우상단 Floating profile("필") 버튼을 함께 연 상태. GNB: "GABRIELLE" 로고 + Notification/Settings + 네비게이션(**Dashboard**(활성)/Assets/Compass/Contents Studio/Know Thyself). Floating profile: "Data Scientist" 이름 탭 + 폴라로이드 브랜드 이미지 + 태그라인 + 바이오 + 하단 **Edit Assets / Edit Goal / Create a post** 3버튼.
+2. **GNB + Floating profile 동시 오픈** — 좌상단 GNB와 우상단 Floating profile("필") 버튼을 함께 연 상태. GNB: "GABRIELLE" 로고 + Notification/Settings + 네비게이션(**Dashboard**(활성)/Self/Compass/Contents Studio/Know Thyself). Floating profile: "Data Scientist" 이름 탭 + 폴라로이드 브랜드 이미지 + 태그라인 + 바이오 + 하단 **Edit Assets / Edit Goal / Create a post** 3버튼.
 
-> GNB는 GB_Assets.md 7.2부·GB_Content_Studio.md 15부·GB_Know_Thyself.md 7부와 동일 구조, Floating profile은 GB_Know_Thyself.md 8부와 완전히 동일한 구조 — 둘 다 전 모듈에서 재사용되는 공용 컴포넌트임을 Dashboard에서도 재확인. 두 패널이 서로 다른 트리거(좌상단 메뉴 버튼 vs 우상단 아바타)로 열리며 동시에 띄울 수 있다는 것도 확인됨.
+> GNB는 GB_Self.md 7.2부·GB_Content_Studio.md 15부·GB_Know_Thyself.md 7부와 동일 구조, Floating profile은 GB_Know_Thyself.md 8부와 완전히 동일한 구조 — 둘 다 전 모듈에서 재사용되는 공용 컴포넌트임을 Dashboard에서도 재확인. 두 패널이 서로 다른 트리거(좌상단 메뉴 버튼 vs 우상단 아바타)로 열리며 동시에 띄울 수 있다는 것도 확인됨.
 
 ## 5. 남은 확인 필요 사항 (Open Items)
 

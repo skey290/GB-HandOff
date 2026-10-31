@@ -104,7 +104,7 @@ Figma names these `radius-md` (8) / `radius-none` (0) / `radius-full` (9999) —
 
 ## Composition with other components
 
-Only one place imports Avatar. `compass-self-avatar` (`components/screens/compass/ui/compass-self-avatar`) and `compass-self-cluster` (`components/screens/compass/ui/compass-self-cluster`) have similar names but are separate components that do not import `ui/avatar`. There is no `compass-growth-avatar` in this codebase.
+Only one place imports Avatar. `compass-self-avatar` and `compass-self-cluster` have similar names but are separate components that do not import `ui/avatar` — both now live in the private GB-Review repo along with the rest of Compass, not part of this repo's handoff scope yet. There is no `compass-growth-avatar` in this codebase.
 
 - **SelfSlot** (`components/screens/dashboard/ui/self-slot`): placed inside a 40×40 round slot with `variant="image"`, forwarding `imageSrc` / `initials` / `name` (as alt) so the image → initial → icon chain is delegated. The outer wrapper owns the 40px size, the highlight ring (`outline` in the active state), and the blur/dim effects, while Avatar fills it as content only.
 

@@ -23,13 +23,13 @@
 
 ### 마이그레이션 상태 (사용처 기준, 컴포넌트 작업 시마다 갱신)
 
-| 범위                                                            | 상태                                                                                                    |
-| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| **`components/ui/` 전체 (29개)**                                | ✅ `--gb-*` 전환 완료                                                                                   |
-| `components/app/`                                               | ⏳ 미전환 — alias로 정상 동작 중                                                                        |
-| `components/screens/compass/` · `components/screens/dashboard/` | ⏳ 미전환 — alias로 정상 동작 중                                                                        |
-| `components/foundation/`                                        | ⏳ 미전환 (토큰 문서 스토리)                                                                            |
-| `src/tokens/text-styles.css`                                    | ⏳ 미전환 — 39종을 prefix 없이 참조 (`var(--text-sm)` 등). 토큰을 정의하지 않고 소비만 하는 클래스 파일 |
+| 범위                             | 상태                                                                                                    |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| **`components/ui/` 전체 (29개)** | ✅ `--gb-*` 전환 완료                                                                                   |
+| `components/app/`                | ⏳ 미전환 — alias로 정상 동작 중                                                                        |
+| `components/screens/dashboard/`  | ⏳ 미전환 — alias로 정상 동작 중                                                                        |
+| `components/foundation/`         | ⏳ 미전환 (토큰 문서 스토리)                                                                            |
+| `src/tokens/text-styles.css`     | ⏳ 미전환 — 39종을 prefix 없이 참조 (`var(--text-sm)` 등). 토큰을 정의하지 않고 소비만 하는 클래스 파일 |
 
 `components/ui/`에서 prefix를 붙이지 않은 것은 Shadcn 브릿지 변수(`--background`,
 `--border`, `--ring`, `--foreground`, `--muted-foreground`, `--accent`, `--primary`,
@@ -199,13 +199,13 @@ Figma `color-primitives` 컬렉션 100개 전체가 코드에 있습니다 — 7
 
 Figma `color-primitives`에 대응 변수가 없습니다.
 
-| CSS Property                         | 값                                        | 사용처                          |
-| ------------------------------------ | ----------------------------------------- | ------------------------------- |
-| `--gb-color-shimmer-gray`            | `#dbdbdb`                                 | `components/ui/skeleton`        |
-| `--gb-color-semantic-non-changeable` | `var(--gb-color-white)` → `#ffffff`       | `components/dashboard`          |
-| `--gb-color-accent-non-changeable`   | `var(--gb-color-neutral-450)` → `#828282` | 참조 없음                       |
-| `--gb-color-sphere-particle`         | `#dd77ee`                                 | 참조 없음 (compass-sphere 예정) |
-| `--gb-color-sphere-particle-hover`   | `#c561d4`                                 | 참조 없음 (compass-sphere 예정) |
+| CSS Property                         | 값                                        | 사용처                                                                             |
+| ------------------------------------ | ----------------------------------------- | ---------------------------------------------------------------------------------- |
+| `--gb-color-shimmer-gray`            | `#dbdbdb`                                 | `components/ui/skeleton`                                                           |
+| `--gb-color-semantic-non-changeable` | `var(--gb-color-white)` → `#ffffff`       | `components/dashboard`                                                             |
+| `--gb-color-accent-non-changeable`   | `var(--gb-color-neutral-450)` → `#828282` | 참조 없음                                                                          |
+| `--gb-color-sphere-particle`         | `#dd77ee`                                 | 이 레포엔 참조 없음 (compass-sphere에서 사용 중이나 private GB-Review 레포로 이동) |
+| `--gb-color-sphere-particle-hover`   | `#c561d4`                                 | 이 레포엔 참조 없음 (compass-sphere에서 사용 중이나 private GB-Review 레포로 이동) |
 
 ## 색상 — Semantic (primitive alias로 구성)
 

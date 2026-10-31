@@ -225,10 +225,7 @@ Passing `trailingAction` adds one more transparent wrapper with a `--gb-spacing-
 
 ## Composition with other components
 
-Two consumers import `@/components/ui/toggle`:
-
-- **`app/compass/page.tsx`**: renders the Analysis submenu directly as an `orientation="vertical"` four-item Toggle, inline — no separate wrapper component. Growth Potential uses lucide `CircleArrowOutUpRight`; the other three are Gabrielle-specific icons pulled from `/public/icons.svg` through `lib/sprite-icon`.
-- **CompassToolbar** (`components/screens/compass/ui/compass-toolbar`): implements the Home/Analysis segment toggle as `type="text"`, matching every token of Figma's `Toggle Type=text`.
+Compass's two consumers (`app/compass/page.tsx`'s inline Analysis submenu, `CompassToolbar`'s Home/Analysis segment toggle) moved to the private GB-Review repo along with the rest of Compass — not part of this repo's handoff scope yet.
 
 The shared pattern: map each item's `pressed` from one `value` in a `value` / `onValueChange` adapter the parent owns. Since Toggle is always a radio group, the adapter only needs to track which value is selected — the ARIA roles and the ignored re-click are handled by Toggle itself.
 

@@ -100,10 +100,7 @@ Borders are implemented as an inset `box-shadow` rather than a real `border`, so
 - **NotiDropdown** (`components/app/noti-dropdown`): reuses Badge indirectly through Tabs (the All/Unread header tabs with counts).
 - **Gnb Work History panel** (`GnbHistoryPanel` in `components/app/gnb`): a fixed `variant="outline"` tag at the start of each history row, beside the label and timestamp.
 - **PersonaRadialChart** (`components/screens/dashboard/ui/persona-radial-chart`): a passive, non-clickable metric display, toggling `default` / `outline` by `emphasized`. In the unselected state it overrides Badge's outline color directly, and adds a custom fade transition class through `className`.
-- **CompassDialTick** (`components/screens/compass/ui/compass-dial-tick`): the dial tick label, toggling `outline` / `default` by `muted`, fixed at `size="20"`, inside a rotated wrapper.
-- **CompassSelfAvatar** (`components/screens/compass/ui/compass-self-avatar`, not "CompassGrowthAvatar" — no such component exists in this codebase): the growth percentage over the avatar ring, toggling `alarm` / `reverse` by `showEstimateStyling`.
-- **CompassMetricCard**: a fixed `variant="outline" size="20"` label at the top right of the card header.
-- **CompassDetailView**: statistical deltas. It narrows `BadgeProps["variant"]` with `Extract` to allow only `"success" | "alarm"` — reusing Badge's type to constrain the consumer's own prop.
+- Compass's four Badge consumers (**CompassDialTick**, **CompassSelfAvatar**, **CompassMetricCard**, **CompassDetailView**) moved to the private GB-Review repo along with the rest of Compass — not part of this repo's handoff scope yet.
 
 The shared pattern: Badge is always composed by **toggling between two variants based on a value or state** (default ↔ outline, alarm ↔ reverse). When a custom color is needed, override it through `className` with another `var(--…)` token rather than a Tailwind arbitrary value.
 

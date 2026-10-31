@@ -1,18 +1,11 @@
 # GB Data Vis
 
-A collection of **custom data visualization components** used in the Gabrielle app (Dashboard / Compass).
-Implemented without a charting library like D3, working directly with SVG path calculations and WebGL (three.js).
+A collection of **custom data visualization components** used in the Gabrielle app (Dashboard).
+Implemented without a charting library like D3, working directly with SVG path calculations.
 
-![Compass app demo](docs/assets/compass-app-demo.png)
+![PersonaRadialChart](docs/assets/persona-radial-chart.png)
 
-_A real assembled screen — CompassSphere (3D particles) + CompassDetailView, viewable at `/compass` after `npm run dev`._
-
-|                                                                                     |                                                                                         |
-| ----------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| ![PersonaRadialChart](docs/assets/persona-radial-chart.png)                         | ![CompassAnalysis](docs/assets/compass-analysis.png)                                    |
-| **PersonaRadialChart** — a radial comparison of self vs 8 personas across 3 metrics | **CompassAnalysis** — a composite view of a ranking dial + persona cluster              |
-| ![CompassSphere](docs/assets/compass-sphere.png)                                    | ![CompassDetailView](docs/assets/compass-detail-view.png)                               |
-| **CompassSphere** — a three.js particle 3D cloud, with hover-based label switching  | **CompassDetailView** — a metric detail panel (including delta badges and error states) |
+**PersonaRadialChart** — a radial comparison of self vs 8 personas across 3 metrics.
 
 ## Quick start
 
@@ -27,30 +20,14 @@ This opens http://localhost:6006. Here are some stories worth checking out right
 | ------------- | ------------------------------------------------ | ------------------------------------------------------------- |
 | **Dashboard** | `Dashboard/UI/PersonaRadialChart` → `Playground` | Badges switch to values on ring hover, avatar hover highlight |
 | **Dashboard** | `Dashboard/UI/SelfCuration` → `Playground`       | Orbital self layout                                           |
-| **Compass**   | `Compass/UI/CompassSphere` → `Playground`        | three.js particle 3D visualization, labels cycle on hover     |
-| **Compass**   | `Compass/UI/CompassDial` → `Playground`          | Ranking radial gauge + ticks                                  |
-| **Compass**   | `Compass/UI/CompassAnalysis` → `Playground`      | A composite view of dial + self cluster + ranking badge       |
-| **Compass**   | `Compass/UI/CompassDetailView` → `Default`       | Metric detail panel, delta badges                             |
-
-You can see the Compass components assembled into a real screen at http://localhost:3000/compass after running `npm run dev`.
 
 ## Structure
 
 ```
-app/compass/page.tsx                          A working demo page assembling the whole Compass app
 components/screens/dashboard/ui/
   persona-radial-chart/                       Self × persona × 3-metric radial chart
   self-curation/                              Orbital self layout (Figma `Self curation`)
   self-slot/                                  The slot reused by SelfCuration (Figma `Part/self`)
-components/screens/compass/ui/
-  compass-dial/ + compass-dial-tick/          Ranking radial gauge + ticks
-  compass-sphere/                             three.js particle 3D visualization
-  compass-analysis/                           A composite dial/cluster view (the metric-selection menu is implemented directly by app/compass/page.tsx via the generic Toggle)
-  compass-detail-view/                        Metric detail panel
-  compass-self-cluster/ + compass-self-avatar/  Self avatar cluster layout
-  compass-growth-avatar/                      An avatar with a growth metric attached
-  compass-metric-card/                        Metric summary card
-  compass-toolbar/                            Segment toggle + Select toolbar next to the sidebar
 components/foundation/                         7 design-token Storybook docs
 lib/
   utils.ts                                    cn() — a custom clsx + tailwind-merge setup
@@ -63,7 +40,11 @@ docs/                                         Spec documents
 
 This repository contains **only what's been designated for public release.** The generic atomic
 components (`Button`, `Select`, `Tabs`, etc.) these components depend on aren't here — they're in
-[GB-Design-System](https://github.com/skey290/GB-Design-System) — you'll need that repo alongside this one to actually run it.
+[GB-HandOff](https://github.com/skey290/GB-HandOff) — you'll need that repo alongside this one to actually run it.
+
+Compass (`compass-dial`, `compass-sphere`, `compass-analysis`, etc.) isn't in this repo yet — its
+Figma file is still being reworked, so it lives in the private GB-Review repo until it's ready to
+hand off.
 
 ## Read this first
 

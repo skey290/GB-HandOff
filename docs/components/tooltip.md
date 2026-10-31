@@ -27,7 +27,7 @@ So the component called "Popover" in this project is really a click-driven confi
 ## When to use
 
 - To show brief supporting information (a title and/or description) when the trigger is hovered or focused.
-- Live usage: onboarding coachmarks on the compass dial, attached in a permanently open state to a tick label or a growth badge.
+- Usage (now in the private GB-Review repo): onboarding coachmarks on the compass dial, attached in a permanently open state to a tick label or a growth badge.
 
 ## When not to use
 
@@ -151,12 +151,7 @@ So the vertical family (`Bottom…` / `Top…`) uses Left/Center/Right for horiz
 
 ## Composition with other components
 
-Both current consumers live under `components/screens/compass/` and use the same "onboarding coachmark" pattern:
-
-- **CompassDialTick**: when a `coachmark` prop is passed, the tick label (text or a `Badge` marker) is wrapped in a `Tooltip` fixed to `variant="reversed"`, always `open`, `side="right"`, `align="start"`. A `coachmark.onDismiss` is wired straight to `onClose`, which brings up the close button.
-- **CompassSelfAvatar** (`components/screens/compass/ui/compass-self-avatar`, not "CompassGrowthAvatar" — no such component exists in this codebase): wraps the growth-percentage `Badge` in the same configuration. That badge is the coachmark anchor confirmed by Figma measurement.
-
-The shared pattern: both use Tooltip purely as a **wrapper** around another shared component, force `open` to true instead of using the hover trigger, and reuse the same `reversed` + `right` / `start` configuration. Neither yet uses `title` / `description` as hover-driven supporting text, which was the original intent.
+Compass's two consumers moved to the private GB-Review repo along with the rest of Compass — not part of this repo's handoff scope yet. They shared the same "onboarding coachmark" pattern: **CompassDialTick** wrapped its tick label (text or a `Badge` marker) in a `Tooltip` fixed to `variant="reversed"`, always `open`, `side="right"`, `align="start"`, with `coachmark.onDismiss` wired straight to `onClose`; **CompassSelfAvatar** wrapped the growth-percentage `Badge` in the same configuration. Both used Tooltip purely as a **wrapper** around another shared component, forcing `open` to true instead of using the hover trigger. Neither used `title` / `description` as hover-driven supporting text, which was the original intent.
 
 ## The shadow scope deliberately differs from Figma
 

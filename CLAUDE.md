@@ -14,7 +14,7 @@
 
 - `app/` — Next.js App Router 라우트/페이지
 - `components/ui/` — 범용 디자인 시스템 UI 컴포넌트 (Shadcn 기반)
-- `components/app/` · `components/screens/compass/` · `components/screens/dashboard/` — 앱 공용 조합 / 앱 전용 컴포넌트
+- `components/app/` · `components/screens/dashboard/` — 앱 공용 조합 / 앱 전용 컴포넌트 (Compass는 private GB-Review 레포로 이동, 아직 핸드오프 범위 밖)
 - `src/tokens/*.css` — 디자인 토큰 원본 (직접 수정)
 - `lib/utils.ts` — `cn()` 등 유틸리티
 - `lib/sprite-icon.tsx` — 아이콘 스프라이트 / lucide 매핑

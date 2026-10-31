@@ -36,7 +36,7 @@ That empty-slot structure is mirrored in code: the dropdown content (option list
 Live usage in this codebase:
 
 - **Country code selection**: `components/ui/input-phone` places a `variant="primary"` Select to the left of the number field. Passing `code` on the options makes the trigger show the code (`+82`) instead of the label. It also sets `isSearchable` so the 245-country list has a visible search box instead of relying on the hidden typeahead buffer alone.
-- **Persona/profile filtering**: `components/screens/compass/ui/compass-toolbar` places a `variant="mute"` Select below the sidebar segment toggle to pick from the "All 'Self'" list. Without `selectOptions` it is not rendered at all.
+- **Persona/profile filtering**: `compass-toolbar` places a `variant="mute"` Select below the sidebar segment toggle to pick from the "All 'Self'" list. Without `selectOptions` it is not rendered at all — now in the private GB-Review repo along with the rest of Compass, not part of this repo's handoff scope yet.
 
 ## When not to use
 
@@ -147,7 +147,7 @@ Hover also runs the **opposite way** from the default family: instead of filling
 ## Composition with other components
 
 - **With `InputPhone`**: `components/ui/input-phone` reuses a `variant="primary"` Select as the country-code dropdown beside the number `Input`, laid out in a flex row. Adding `code` to the options turns on both the trigger display and the dropdown code column.
-- **With `CompassToolbar`**: `components/screens/compass/ui/compass-toolbar` stacks a `variant="mute"` Select below its own segment toggle (which is not a Select). Without `selectOptions`, the Select is not rendered.
+- **With `CompassToolbar`**: stacks a `variant="mute"` Select below its own segment toggle (which is not a Select). Without `selectOptions`, the Select is not rendered — now in the private GB-Review repo, not part of this repo's handoff scope yet.
 
 ## The focus ring exists on six variants, not the `side` family
 

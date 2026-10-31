@@ -12,7 +12,7 @@ import {
   SelfCluster,
   type ClusterSelf,
   type SelfMenuAction,
-} from "@/components/screens/assets/ui/self-cluster";
+} from "@/components/screens/self/ui/self-cluster";
 import { Popover } from "@/components/ui/popover";
 import { Icon } from "@/lib/sprite-icon";
 import { GoalEditDialog } from "@/components/app/goal-setting";
@@ -28,7 +28,7 @@ import {
 import {
   AssetPanel,
   type AssetPanelSelfProfile,
-} from "@/components/screens/assets/ui/asset-panel";
+} from "@/components/screens/self/ui/asset-panel";
 import type {
   GoalPostingFrequency,
   GoalSettingAction,
@@ -49,7 +49,6 @@ const GNB_ITEMS: GnbItem[] = [
 // a real page exists.
 const GNB_PATHS: Record<string, string> = {
   assets: "/assets",
-  compass: "/compass",
   "contents-studio": "/content-studio",
 };
 

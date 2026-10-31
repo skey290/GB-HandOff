@@ -1,6 +1,6 @@
 # Gabrielle Know Thyself — 화면/플로우 종합본
 
-> 이 문서는 GB_Compass.md(지표 설계 스펙)와 달리 별도의 원본 스펙 문서가 없어, Figma 파일(GB_Know-thyself)의 화면/플로우를 역으로 분석해 정리한 문서다. GB_Assets.md/GB_Content_Studio.md와 동일한 방식으로 작성한다.
+> 이 문서는 GB_Compass.md(지표 설계 스펙)와 달리 별도의 원본 스펙 문서가 없어, Figma 파일(GB_Know-thyself)의 화면/플로우를 역으로 분석해 정리한 문서다. GB_Self.md/GB_Content_Studio.md와 동일한 방식으로 작성한다.
 > 용어 원칙: "persona" 사용 금지, "self"(내부) / "identity"(사용자 대상 카피)만 사용 (GB_all.md 4절).
 
 ## 0. 모듈 정의 (GB_all.md 5.4절 기준)
@@ -90,9 +90,9 @@
 2개 화면.
 
 1. **기본 상태** — GNB 닫힘, 모든 Foundation/Core Objective/Tone of Voice 완료된 최종 대시보드.
-2. **GNB 사이드 패널** — 좌상단 아이콘 클릭 시 열리는 패널. "GABRIELLE" 로고 + Notification/Settings + 네비게이션(Dashboard/Assets/Compass/Contents Studio/**Know Thyself**(현재 활성)).
+2. **GNB 사이드 패널** — 좌상단 아이콘 클릭 시 열리는 패널. "GABRIELLE" 로고 + Notification/Settings + 네비게이션(Dashboard/Self/Compass/Contents Studio/**Know Thyself**(현재 활성)).
 
-> GB_Assets.md 7.2부·GB_Content_Studio.md 15부에서 확인된 GNB와 완전히 동일한 구조/항목이 Know Thyself에서도 그대로 재사용됨 — 공용 전역 네비게이션 컴포넌트.
+> GB_Self.md 7.2부·GB_Content_Studio.md 15부에서 확인된 GNB와 완전히 동일한 구조/항목이 Know Thyself에서도 그대로 재사용됨 — 공용 전역 네비게이션 컴포넌트.
 
 ## 8. Floating profile 오픈
 
@@ -101,7 +101,7 @@
 1. **기본 상태** — 패널 닫힘, 모든 Foundation/Core Objective/Tone of Voice 완료된 최종 대시보드.
 2. **Floating profile 패널** — 우상단 아바타 아이콘 클릭 시 열리는 우측 패널. 현재 Self("Data Scientist") 이름 탭 + 폴라로이드 스타일 브랜드 이미지(타임스탬프 포함) + 태그라인 + 전체 바이오 문단. 하단 **Edit Assets / Edit Goal / Create a post** 3개 버튼.
 
-> 이 패널 하나에서 Asset 모듈(Edit Assets) · Know Thyself(Edit Goal) · Content Studio(Create a post)로 바로 진입할 수 있다 — 현재 Self를 기준으로 4대 모듈을 가로질러 연결하는 크로스 모듈 허브 패널로 추정. GNB(7부)가 모듈 간 "화면 전환"이라면, Floating profile은 "현재 Self에 대한 빠른 액션 실행" 역할로 구분된다.
+> 이 패널 하나에서 Self 모듈(Edit Assets) · Know Thyself(Edit Goal) · Content Studio(Create a post)로 바로 진입할 수 있다 — 현재 Self를 기준으로 4대 모듈을 가로질러 연결하는 크로스 모듈 허브 패널로 추정. GNB(7부)가 모듈 간 "화면 전환"이라면, Floating profile은 "현재 Self에 대한 빠른 액션 실행" 역할로 구분된다.
 
 ## 9. 남은 확인 필요 사항 (Open Items)
 

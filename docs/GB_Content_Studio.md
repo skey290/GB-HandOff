@@ -1,6 +1,6 @@
 # Gabrielle Content Studio — 화면/플로우 종합본
 
-> 이 문서는 GB_Compass.md(지표 설계 스펙)와 달리 별도의 원본 스펙 문서가 없어, Figma 파일(GB_Content-Studio)의 화면/플로우를 역으로 분석해 정리한 문서다. GB_Assets.md와 동일한 방식으로 작성한다.
+> 이 문서는 GB_Compass.md(지표 설계 스펙)와 달리 별도의 원본 스펙 문서가 없어, Figma 파일(GB_Content-Studio)의 화면/플로우를 역으로 분석해 정리한 문서다. GB_Self.md와 동일한 방식으로 작성한다.
 > 용어 원칙: "persona" 사용 금지, "self"(내부) / "identity"(사용자 대상 카피)만 사용 (GB_all.md 4절).
 
 ## 0. 모듈 정의 (GB_all.md 5.2절, 6절 기준)
@@ -54,7 +54,7 @@
 
 1. **다양한 상태 공존** — 2부 이후 상태. Today 3슬롯 "Posted"(Edit Post 버튼 비활성화 회색), Tomorrow 11AM "Draft", 2:25PM "Scheduled", Thursday 3개 "Draft" — 포스트 상태 5종이 동시에 노출됨. 각 카드 좌측 상단에 **archive 아이콘 버튼**이 있음.
 2. (①과 동일 화면, 좌측 리스트 hover 대상만 다름 — 상태 차이 없음)
-3. **Move to Archive? 확인 다이얼로그** — Draft 카드의 archive 아이콘 클릭 시 모달을 열지 않고 **카드 위에 바로** "Move to Archive?" 다이얼로그가 뜬다. "This will be moved to your archive and take effect immediately." + Cancel/Confirm (GB_Assets.md 4부와 동일한 공용 Button Group 패턴).
+3. **Move to Archive? 확인 다이얼로그** — Draft 카드의 archive 아이콘 클릭 시 모달을 열지 않고 **카드 위에 바로** "Move to Archive?" 다이얼로그가 뜬다. "This will be moved to your archive and take effect immediately." + Cancel/Confirm (GB_Self.md 4부와 동일한 공용 Button Group 패턴).
 
 > 4부(포스팅 모달에서 아카이빙)와의 차이: 이 섹션은 카드에서 직접, 4부는 모달을 연 상태에서 같은 아카이빙 액션을 수행하는 경로.
 
@@ -132,7 +132,7 @@
 2. **카드 확장** — 확장(⤢) 아이콘 클릭 시 카드가 펼쳐져 이름 "Cloe" + 태그라인("4 years in finance, 3 in data science — forecasting Finance teams trust.")이 나타나고, 그 아래 현재 Self를 표시하는 **"Data Scientist" 드롭다운**이 추가 노출.
 3. **Self 전환 드롭다운** — 드롭다운을 열면 다른 Self 목록(Morning Jogger/Workflow Sculptor/Sunday Baker/Vintage Curator/Brooklyn Observer)이 나타남.
 
-> Content Studio에도 Self 전환 셀렉터가 존재함을 확인 — GB_Compass.md 8부(좌측 원형 시각화와 분리된 우측 패널 Self 전환), GB_Assets.md 10부(디테일뷰 상단 Self 탭)와 동일한 "Self별로 보는 화면을 바꾸는" 패턴이 Content Studio에서는 프로필 카드 드롭다운 형태로 구현된 것으로 추정. 선택 시 실제로 콘텐츠/스케줄 리스트가 해당 Self 기준으로 전환되는지는 리액션 데이터 없음(추정).
+> Content Studio에도 Self 전환 셀렉터가 존재함을 확인 — GB_Compass.md 8부(좌측 원형 시각화와 분리된 우측 패널 Self 전환), GB_Self.md 10부(디테일뷰 상단 Self 탭)와 동일한 "Self별로 보는 화면을 바꾸는" 패턴이 Content Studio에서는 프로필 카드 드롭다운 형태로 구현된 것으로 추정. 선택 시 실제로 콘텐츠/스케줄 리스트가 해당 Self 기준으로 전환되는지는 리액션 데이터 없음(추정).
 
 ## 11. 개별 포스팅 상태가 서로 다를 때 모달 (Posted, Draft, Scheduled)
 
@@ -156,7 +156,7 @@
 
 1. **아카이브 화면** — 좌측에 "Deleted at [시간]" 형식의 삭제 항목 리스트(이 예시 6개), 우측에 해당 카드들이 "Deleted" 배지 + 하단 **Restore** 버튼과 함께 노출.
 2. **항목 선택** — 리스트에서 특정 "Deleted at" 항목 선택 시 해당 카드에도 테두리 강조가 동기화.
-3. **복원 확인 다이얼로그** — Restore 클릭 시 뜨는 다이얼로그. 타이틀은 "My goal"로 표시되지만 재사용 컴포넌트의 스테일 기본값일 뿐 실제 내용과 무관(GB_Assets.md에서도 동일 현상 기록됨). 안내 문구 "Move this back to your schedule. It will be visible again and ready to use." + Cancel/Confirm으로 실제는 복원 확인임을 확인.
+3. **복원 확인 다이얼로그** — Restore 클릭 시 뜨는 다이얼로그. 타이틀은 "My goal"로 표시되지만 재사용 컴포넌트의 스테일 기본값일 뿐 실제 내용과 무관(GB_Self.md에서도 동일 현상 기록됨). 안내 문구 "Move this back to your schedule. It will be visible again and ready to use." + Cancel/Confirm으로 실제는 복원 확인임을 확인.
 
 ## 13. 아카이브에서 포스팅 삭제
 
@@ -164,7 +164,7 @@
 
 1. **기준 상태** — 12부와 동일한 아카이브 화면, 각 카드 우상단에 "x"(영구 삭제) 아이콘.
 2. **삭제 아이콘 hover** — 특정 카드의 "x" 아이콘 선택 상태.
-3. **영구 삭제 확인** — "⚠ Are you sure you want to delete this?" + "This will not be saved and take effect immediately." + Cancel/Confirm. GB_Assets.md의 영구 삭제 다이얼로그와 동일한 문구/구조 — 12부(Restore, 복구 가능)와 달리 되돌릴 수 없는 삭제임을 명시적으로 경고.
+3. **영구 삭제 확인** — "⚠ Are you sure you want to delete this?" + "This will not be saved and take effect immediately." + Cancel/Confirm. GB_Self.md의 영구 삭제 다이얼로그와 동일한 문구/구조 — 12부(Restore, 복구 가능)와 달리 되돌릴 수 없는 삭제임을 명시적으로 경고.
 
 ## 14. Analysis에서 분석 상세보기
 
@@ -181,9 +181,9 @@
 2개 화면.
 
 1. **기본 상태** — GNB 닫힘, 9개 포스트 카드 + 스케줄 리스트 전부 Draft.
-2. **GNB 사이드 패널** — 좌상단 아이콘 클릭 시 열리는 패널. "GABRIELLE" 로고 + Notification/Settings + 네비게이션(Dashboard/Assets/Compass/**Contents Studio**(현재 활성)/Know Thyself).
+2. **GNB 사이드 패널** — 좌상단 아이콘 클릭 시 열리는 패널. "GABRIELLE" 로고 + Notification/Settings + 네비게이션(Dashboard/Self/Compass/**Contents Studio**(현재 활성)/Know Thyself).
 
-> GB_Assets.md 7.2부에서 확인된 GNB와 동일한 구조/항목이 Content Studio에서도 그대로 재사용됨 — 공용 전역 네비게이션 컴포넌트.
+> GB_Self.md 7.2부에서 확인된 GNB와 동일한 구조/항목이 Content Studio에서도 그대로 재사용됨 — 공용 전역 네비게이션 컴포넌트.
 
 ## 16. 남은 확인 필요 사항 (Open Items)
 

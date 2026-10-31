@@ -1,7 +1,7 @@
 # AssetPanel
 
 Figma: [❄️ GB_UXUI (261002)](https://www.figma.com/design/Wp6AZNGqC4qf2Sz5zQ2PzQ/%F0%9F%93%8C-GB_UXUI--261002-?node-id=8612-89563) — `Detail view` (node-id `8612:89563`)
-Code: `components/screens/assets/ui/asset-panel/asset-panel.tsx`
+Code: `components/screens/self/ui/asset-panel/asset-panel.tsx`
 
 ## Overview
 
@@ -13,7 +13,7 @@ The live `/assets` site's right-side fixed panel for the currently selected Self
 
 ## When not to use
 
-- The circular 8-slot Self picker itself → `SelfCluster` (`components/screens/assets/ui/self-cluster`), which this panel is paired with but does not replace.
+- The circular 8-slot Self picker itself → `SelfCluster` (`components/screens/self/ui/self-cluster`), which this panel is paired with but does not replace.
 
 ## How to use
 
