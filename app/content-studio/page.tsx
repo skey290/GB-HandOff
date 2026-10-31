@@ -10,6 +10,7 @@ import { Gnb, type GnbItem } from "@/components/app/gnb";
 import { Button } from "@/components/ui/button";
 import { ButtonGroup } from "@/components/ui/button-group";
 import type { CalendarRangeValue } from "@/components/ui/calendar";
+import { Toggle } from "@/components/ui/toggle";
 import {
   Dialog,
   DialogContent,
@@ -79,7 +80,6 @@ const GNB_ITEMS: GnbItem[] = [
 // a real page exists.
 const GNB_PATHS: Record<string, string> = {
   assets: "/assets",
-  compass: "/compass",
   "contents-studio": "/content-studio",
 };
 
@@ -154,6 +154,9 @@ export default function ContentStudioPage() {
   const router = useRouter();
   const [gnbExpanded, setGnbExpanded] = React.useState(false);
   const [selfValue, setSelfValue] = React.useState("data-scientist");
+  // Analysis 탭 콘텐츠(AnalysisView)와 Archive 서브페이지는 핸드오프 범위
+  // 밖이라 탭/아이콘만 그대로 두고 실제 연동은 하지 않는다.
+  const [activeTab, setActiveTab] = React.useState(1);
 
   // Self마다 독립된 포스트/스케줄을 갖는다 — 한 번도 생성한 적 없는 self는
   // 빈 배열/기본 슬롯으로 시작해 오른쪽 패널에 아무 포스트도 안 보인다.
@@ -593,6 +596,28 @@ export default function ContentStudioPage() {
       <div className="relative z-4 flex min-w-0 flex-1 flex-col">
         <div className="flex min-h-0 flex-1 overflow-hidden">
           <div className="flex h-full w-[380px] shrink-0 flex-col">
+            <div className="flex items-center px-[var(--gb-spacing-5)] py-[var(--gb-spacing-5)]">
+              <Toggle
+                type="text"
+                items={[
+                  {
+                    text: "Content",
+                    pressed: activeTab === 1,
+                    onPressedChange: () => setActiveTab(1),
+                  },
+                  {
+                    text: "Analysis",
+                    pressed: activeTab === 0,
+                    onPressedChange: () => setActiveTab(0),
+                  },
+                ]}
+                trailingAction={{
+                  icon: "archive-icon",
+                  "aria-label": "Archive",
+                }}
+              />
+            </div>
+
             <div className="flex min-h-0 flex-1 flex-col gap-[var(--gb-spacing-5)] py-[var(--gb-spacing-5)]">
               <ProfileCard
                 className="shrink-0"
@@ -754,7 +779,7 @@ export default function ContentStudioPage() {
                   </Button>
                 </div>
               ) : (
-                <div className="flex-1 columns-[360px] gap-[var(--gb-spacing-3)] overflow-y-auto px-[var(--gb-spacing-8)] pt-[var(--gb-spacing-1)] pb-[var(--gb-spacing-8)]">
+                <div className="flex-1 columns-[360px] gap-[var(--gb-spacing-3)] overflow-y-auto px-[var(--gb-spacing-8)] pt-[var(--gb-spacing-2-5)] pb-[var(--gb-spacing-8)]">
                   {posts.map((post) => (
                     <div
                       key={post.id}
