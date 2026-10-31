@@ -1,7 +1,13 @@
 # GB Data Vis
 
-A collection of **custom data visualization components** used in the Gabrielle app (Dashboard).
-Implemented without a charting library like D3, working directly with SVG path calculations.
+This repo ([GB-HandOff](https://github.com/skey290/GB-HandOff)) is the Gabrielle design system —
+and, on top of it, two fully assembled, production-ready app screens handed off for development:
+`/self` and `/content-studio` (Content tab). See **[docs/HANDOFF.md](docs/HANDOFF.md)** for what's
+done, what isn't, and where the dummy data lives.
+
+Below is the design-system/data-viz half of the repo: a collection of **custom data visualization
+components** used in the Gabrielle app (Dashboard), implemented without a charting library like
+D3, working directly with SVG path calculations.
 
 ![PersonaRadialChart](docs/assets/persona-radial-chart.png)
 

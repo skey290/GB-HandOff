@@ -125,7 +125,13 @@ describe("Calendar (single)", () => {
     const today = new Date();
     render(<Calendar mode="single" onValueChange={vi.fn()} />);
 
-    const cell = screen.getByRole("button", { name: String(today.getDate()) });
+    const candidates = screen.getAllByRole("button", {
+      name: String(today.getDate()),
+    });
+    const cell = candidates.find(
+      (el) => el.getAttribute("data-other-month") !== "true",
+    );
+
     expect(cell).toHaveAttribute("data-today", "true");
     expect(cell).not.toHaveAttribute("data-selected");
   });
