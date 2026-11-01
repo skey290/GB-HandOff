@@ -127,6 +127,23 @@ describe("SelfCluster", () => {
     expect(screen.getAllByText("Data Scientist").length).toBeGreaterThan(0);
   });
 
+  it("shows the selected self's label as center text, not the north slot's, once hover ends", () => {
+    render(
+      <SelfCluster
+        selves={[northSelf, eastSelf]}
+        selectedSelfId={eastSelf.id}
+        onAddSelf={vi.fn()}
+        onSelectSelf={vi.fn()}
+        getSelfMenuActions={noopActions}
+      />,
+    );
+
+    // Entrepreneur's own slot label plus the center text both read "Entrepreneur" —
+    // Data Scientist (north) shows only once, its own slot label, no longer the center.
+    expect(screen.getAllByText("Entrepreneur")).toHaveLength(2);
+    expect(screen.getAllByText("Data Scientist")).toHaveLength(1);
+  });
+
   describe("dropdown open/close", () => {
     afterEach(() => {
       vi.useRealTimers();

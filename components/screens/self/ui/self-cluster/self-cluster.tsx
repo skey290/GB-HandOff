@@ -231,7 +231,13 @@ export function SelfCluster({
   // The center text switches to that Self's name on every thumbnail hover — a separate state unrelated to the menu being open.
   const [hoveredSelfId, setHoveredSelfId] = React.useState<string | null>(null);
   const hoveredSelf = selves.find((self) => self.id === hoveredSelfId);
-  const centerSelf = hoveredSelf ?? northSelf;
+  // Once the hover ends, the center text falls back to whichever Self is
+  // actually selected (same signal as the corner bracket below), not always
+  // the north slot — selecting a Self elsewhere in the cluster should make
+  // the center text follow it instead of reverting to whatever happens to
+  // occupy north.
+  const selectedSelf = selves.find((self) => self.id === selectedSelfId);
+  const centerSelf = hoveredSelf ?? selectedSelf ?? northSelf;
 
   // The selected corner bracket for an empty slot (Figma `Profile type=empty,
   // Status=selected`) has no concept of permanent selection unlike a filled
