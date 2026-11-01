@@ -50,6 +50,7 @@
   width: 100%;
   flex: 1 1 auto;
   align-items: stretch;
+  gap: var(--gb-spacing-2);
   min-height: 0;
 }
 

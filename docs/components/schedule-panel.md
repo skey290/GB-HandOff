@@ -76,7 +76,7 @@ Figma also defines four `settings-*` types (`settings-daily`/`settings-weekly`/`
 
 - Header: `RangeSelect` (flex-basis overridden to 0 so it shrinks inside the 380px card rather than keeping its own 488px default width) + a 36px gear `Button variant="icon"`, then a full-width `Button variant="primary"` CTA ("Create Posts") below. `type="archived"` skips this whole header block — it only renders a full-width `RangeSelect`, no gear button and no CTA.
 - "Schedule created" section title + "Schedule All Draft" `Chips` sit directly above the date-grouped list (hidden for `type="archived"`) — not part of Figma yet, see "Design status" below.
-- Body: date groups (semibold date heading + `ScheduleSlot` rows), auto-scrolling when a parent constrains the panel's height. The scroll thumb position reuses the same measure-on-scroll pattern as `DropdownList`/`NotiDropdown`, paired with the shared `Scrollbar` component. `type="no content"` replaces the whole body with a centered "No Post Created" message instead.
+- Body: date groups (semibold date heading + `ScheduleSlot` rows), auto-scrolling when a parent constrains the panel's height. The scroll thumb position reuses the same measure-on-scroll pattern as `DropdownList`/`NotiDropdown`, paired with the shared `Scrollbar` component, `--gb-spacing-2` apart from the scrollable list (`.body`'s own `gap`). `type="no content"` replaces the whole body with a centered "No Post Created" message instead.
 - Footer: a full-width `Button variant="outline"` "Add Schedule" with a trailing plus icon, shown only for `type="default"`/`"archived"`.
 
 ## States and behaviors

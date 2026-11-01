@@ -41,14 +41,17 @@ All `value`/`defaultValue`/`onChange`-style groups follow the controlled/uncontr
 
 ## Structure
 
-- Header: `RangeSelect` (flex-basis overridden to 0, same trick as `SchedulePanel`) + a 36px `Button variant="icon"` with a back arrow.
-- Repeat section: a bold "Repeat" title, a 4-way tab row (Daily/Weekly/Monthly/Custom, each `flex: 1`), and a conditional middle block:
-  - `daily`: no middle block.
-  - `weekly`: "On Every" + 7 weekday toggle pills (M T W T F S S).
-  - `monthly`: "On this date" + "Day `NumberMaskInput` of every month".
-  - `custom`: "Every" + `NumberMaskInput` + a `Select variant="primary"` for the unit (Days/Weeks/Months).
-- A 1px divider, then the "On Each Day" section shared by all four types: a stepper (circular minus/plus buttons + `NumberMaskInput` + "time(s) a day"), then one `InputTime` row per slot in the active tab's list (`showDelete` and `shouldFitContainer` on every row). The first row's label is "When would you like to post?"; row 2+ are numbered "When would you like to post? (slot N)".
-- A full-width `Button variant="primary"` "Save" at the bottom.
+Same three-way split as `SchedulePanel`: a fixed header, a scrollable middle, and a fixed footer — neither the header nor the Save button ever move as the middle scrolls.
+
+- Header (fixed): `RangeSelect` (flex-basis overridden to 0, same trick as `SchedulePanel`) + a 36px `Button variant="icon"` with a back arrow.
+- Scrollable middle (`.scrollColumn`, paired with the shared `Scrollbar` component exactly like `SchedulePanel`'s `.groupsList` — native scrollbar hidden, `--gb-spacing-2` gap between the list and the decorative track):
+  - Repeat section: a bold "Repeat" title, a 4-way tab row (Daily/Weekly/Monthly/Custom, each `flex: 1`), and a conditional middle block:
+    - `daily`: no middle block.
+    - `weekly`: "On Every" + 7 weekday toggle pills (M T W T F S S).
+    - `monthly`: "On this date" + "Day `NumberMaskInput` of every month".
+    - `custom`: "Every" + `NumberMaskInput` + a `Select variant="primary"` for the unit (Days/Weeks/Months).
+  - A 1px divider, then the "On Each Day" section shared by all four types: a stepper (circular minus/plus buttons + `NumberMaskInput` + "time(s) a day"), then one `InputTime` row per slot in the active tab's list (`showDelete` and `shouldFitContainer` on every row). The first row's label is "When would you like to post?"; row 2+ are numbered "When would you like to post? (slot N)".
+- Footer (fixed): a full-width `Button variant="primary"` "Save" — a root-level sibling of the scroll area, not inside it, same placement as `SchedulePanel`'s "Add Schedule" footer.
 
 ## States and behaviors
 
@@ -59,3 +62,4 @@ All `value`/`defaultValue`/`onChange`-style groups follow the controlled/uncontr
 - **Growing the stepper (or typing a bigger number directly) never leaves a new row empty.** `resizeScheduleTimeSlots` (exported alongside the component) fills every new row by carrying the row above it's `time`/`period` forward — or `"11:00"`/`"AM"` for a first row with nothing above it — so a user can step from 1 to 4 occurrences and Save stays usable without having to type into each new row first. Shrinking the stepper (or deleting a row via `InputTime`'s delete button) just truncates the array; it never touches the remaining rows' values.
 - Save is disabled while any slot's `time` is empty (a user can still clear a row by hand), or while the active tab's own required field is empty (weekday for Weekly, day-of-month for Monthly, interval count for Custom).
 - `resizeScheduleTimeSlots` is also the function Self Goal/Content Goal's posting-frequency stepper calls (via `deriveScheduleFromFrequency` in `components/screens/content-studio/data.ts`) when posting frequency changes outside this panel — so a frequency bump from the Self Goal card and a stepper bump here fill new rows the exact same way.
+- **The header and Save button never shift position as content scrolls or the scrollbar appears/disappears.** An earlier version scrolled the whole panel as one block (`overflow-y: auto` on the root), which both moved the back button out of view while scrolling and let the native scrollbar's reserved width nudge the header/Save width whenever it toggled on or off — switching between `SchedulePanel` (no visible native scrollbar at all) and this panel made the gear/back icon visibly jump. Matching `SchedulePanel`'s structure (fixed header, fixed footer, only the middle `.scrollColumn` scrolls, native scrollbar hidden in favor of the shared `Scrollbar` component) fixed both.

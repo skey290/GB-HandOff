@@ -10,13 +10,16 @@
   border: var(--gb-border-1) solid var(--gb-border-default);
   border-radius: var(--gb-radius-scale-2xl);
   background: var(--gb-background-default);
-  overflow-y: auto;
-  overflow-x: hidden;
 }
 
+/* Not scrollable — same split as SchedulePanel's .header/.groupsList: the
+   header (RangeSelect + back button) and the Save button below (see
+   .saveButton) both stay put while only .scrollColumn inside .body scrolls
+   between them, so neither one's position ever shifts with scroll state. */
 .headerRow {
   display: flex;
   width: 100%;
+  flex-shrink: 0;
   align-items: flex-start;
   gap: var(--gb-spacing-2);
 }
@@ -27,12 +30,39 @@
   min-width: 0;
 }
 
+/* Wraps .scrollColumn + the decorative Scrollbar as siblings — matches
+   SchedulePanel's .body/.listColumn/.groupsList split exactly, including
+   reusing the same Scrollbar component rather than a repainted native one. */
 .body {
   display: flex;
   width: 100%;
+  min-height: 0;
+  flex: 1 1 auto;
+  align-items: stretch;
+  gap: var(--gb-spacing-2);
+}
+
+/* The only scrollable element (matches SchedulePanel's .groupsList) — native
+   scrollbar hidden via scrollbar-width/::-webkit-scrollbar below, the
+   decorative Scrollbar component draws the visible track/thumb instead, so
+   a scrollbar appearing/disappearing as the Repeat tab or time-slot count
+   changes never shifts the header's or Save's layout width. */
+.scrollColumn {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  flex: 1 1 auto;
   flex-direction: column;
   align-items: flex-start;
   gap: var(--gb-spacing-6);
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none;
+}
+
+.scrollColumn::-webkit-scrollbar {
+  display: none;
 }
 
 .sectionTitle {
@@ -272,6 +302,10 @@
   border-top: var(--gb-border-1) solid var(--gb-border-default);
 }
 
+/* A root-level sibling of .body, not inside .scrollColumn — same placement
+   as SchedulePanel's "Add Schedule" footer button, always visible below the
+   scroll area instead of scrolling away with the rest of the content. */
 .saveButton {
   width: 100%;
+  flex-shrink: 0;
 }

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import type { CalendarRangeValue } from "@/components/ui/calendar";
 import { InputTime, type TimePeriod } from "@/components/ui/input-time";
 import { RangeSelect } from "@/components/ui/range-select";
+import { Scrollbar } from "@/components/ui/scrollbar";
 import { Select, type SelectOption } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
@@ -442,6 +443,41 @@ export function ScheduleSettingsPanel({
     setTimeSlots(currentTimeSlots.filter((_, i) => i !== index));
   };
 
+  // Same decorative-Scrollbar pattern as SchedulePanel's .groupsList — the
+  // native scrollbar stays hidden (see .scrollColumn in the CSS) so Save
+  // and the header above it never shift width when a scrollbar would
+  // otherwise appear/disappear as the Repeat tab or time-slot count changes.
+  const scrollRef = React.useRef<HTMLDivElement>(null);
+  const [thumb, setThumb] = React.useState({ top: 0, height: 100 });
+
+  const updateThumb = React.useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const { scrollTop, scrollHeight, clientHeight } = el;
+    if (scrollHeight <= clientHeight) {
+      setThumb({ top: 0, height: 100 });
+      return;
+    }
+    const heightPercent = (clientHeight / scrollHeight) * 100;
+    const topPercent =
+      (scrollTop / (scrollHeight - clientHeight)) * (100 - heightPercent);
+    setThumb({ top: topPercent, height: heightPercent });
+  }, []);
+
+  React.useEffect(() => {
+    updateThumb();
+  }, [updateThumb, currentRepeatType, currentTimeSlots]);
+
+  React.useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver(updateThumb);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [updateThumb]);
+
+  const showScrollbar = thumb.height < 100;
+
   return (
     <div className={cn(styles.root, className)} {...props}>
       <div className={styles.headerRow}>
@@ -460,156 +496,167 @@ export function ScheduleSettingsPanel({
       </div>
 
       <div className={styles.body}>
-        <div className={styles.repeatSection}>
-          <p className={styles.sectionTitle}>Repeat</p>
-          <div className={styles.repeatTabs} role="tablist">
-            {REPEAT_TABS.map((tab) => {
-              const selected = tab.id === currentRepeatType;
-              return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={selected}
-                  data-selected={selected || undefined}
-                  onClick={() => setRepeatType(tab.id)}
-                  className={styles.repeatTab}
-                >
-                  {tab.label}
-                </button>
-              );
-            })}
-          </div>
-
-          {currentRepeatType === "weekly" && (
-            <div className={styles.fieldGroup}>
-              <p className={styles.fieldLabel}>On Every</p>
-              <div className={styles.weekdayRow}>
-                {WEEKDAYS.map((day, index) => {
-                  const selected = currentWeekdays.includes(day.id);
-                  return (
-                    <button
-                      key={`${day.id}-${index}`}
-                      type="button"
-                      aria-pressed={selected}
-                      aria-label={day.id}
-                      data-selected={selected || undefined}
-                      onClick={() => toggleWeekday(day.id)}
-                      className={styles.weekdayPill}
-                    >
-                      {day.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {currentRepeatType === "monthly" && (
-            <div className={styles.fieldGroup}>
-              <p className={styles.fieldLabel}>On this date</p>
-              <div className={styles.inlineRow}>
-                <span className={styles.inlineLabel}>Day</span>
-                <DayOfMonthInput
-                  value={currentDayOfMonth}
-                  onValueChange={setDayOfMonth}
-                  onInvalidChange={setIsDayOfMonthInvalid}
-                  className={styles.numberMaskSemibold}
-                />
-                <span className={styles.inlineLabel}>of every month</span>
-              </div>
-              {isDayOfMonthInvalid && (
-                <p className={styles.error}>{DAY_OF_MONTH_ERROR_MESSAGE}</p>
-              )}
-            </div>
-          )}
-
-          {currentRepeatType === "custom" && (
-            <div className={styles.fieldGroup}>
-              <p className={styles.fieldLabel}>Every</p>
-              <div className={styles.inlineRow}>
-                <NumberMaskInput
-                  aria-label="Repeat interval"
-                  value={currentEveryCount}
-                  onValueChange={setEveryCount}
-                  className={styles.numberMaskSemibold}
-                />
-                <Select
-                  options={EVERY_UNIT_OPTIONS}
-                  value={currentEveryUnit}
-                  onValueChange={setEveryUnit}
-                  className={styles.everyUnitSelect}
-                />
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className={styles.divider} />
-
-        <div className={styles.onEachDaySection}>
-          <p className={styles.sectionTitle}>On Each Day</p>
-
-          <div className={styles.fieldGroup}>
-            <p className={styles.fieldLabel}>
-              How often would you like to post?
-            </p>
-            <div className={styles.stepperRow}>
-              <button
-                type="button"
-                aria-label="Decrease occurrences per day"
-                onClick={() => stepOccurrences(-1)}
-                className={styles.stepperButton}
-              >
-                <Minus aria-hidden="true" className={styles.stepperIcon} />
-              </button>
-              <NumberMaskInput
-                aria-label="Occurrences per day"
-                value={String(occurrencesCount)}
-                onValueChange={(value) => resizeTimeSlots(Number(value || 0))}
-                className={styles.numberMaskSemibold}
-              />
-              <button
-                type="button"
-                aria-label="Increase occurrences per day"
-                onClick={() => stepOccurrences(1)}
-                className={styles.stepperButton}
-              >
-                <Plus aria-hidden="true" className={styles.stepperIcon} />
-              </button>
-              <span className={styles.inlineLabel}>time(s) a day</span>
-            </div>
-          </div>
-
-          {currentTimeSlots.map((slot, index) => (
-            <InputTime
-              key={index}
-              label={
-                index === 0
-                  ? "When would you like to post?"
-                  : `When would you like to post? (slot ${index + 1})`
-              }
-              showTitle={index === 0}
-              value={slot.time}
-              onValueChange={(value) => updateTimeSlot(index, { time: value })}
-              period={slot.period}
-              onPeriodChange={(period) => updateTimeSlot(index, { period })}
-              showDelete
-              onDelete={() => removeTimeSlot(index)}
-              shouldFitContainer
-            />
-          ))}
-        </div>
-
-        <Button
-          variant="primary"
-          className={styles.saveButton}
-          onClick={onSave}
-          disabled={isSaveDisabled}
+        <div
+          ref={scrollRef}
+          onScroll={updateThumb}
+          className={styles.scrollColumn}
         >
-          Save
-        </Button>
+          <div className={styles.repeatSection}>
+            <p className={styles.sectionTitle}>Repeat</p>
+            <div className={styles.repeatTabs} role="tablist">
+              {REPEAT_TABS.map((tab) => {
+                const selected = tab.id === currentRepeatType;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={selected}
+                    data-selected={selected || undefined}
+                    onClick={() => setRepeatType(tab.id)}
+                    className={styles.repeatTab}
+                  >
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {currentRepeatType === "weekly" && (
+              <div className={styles.fieldGroup}>
+                <p className={styles.fieldLabel}>On Every</p>
+                <div className={styles.weekdayRow}>
+                  {WEEKDAYS.map((day, index) => {
+                    const selected = currentWeekdays.includes(day.id);
+                    return (
+                      <button
+                        key={`${day.id}-${index}`}
+                        type="button"
+                        aria-pressed={selected}
+                        aria-label={day.id}
+                        data-selected={selected || undefined}
+                        onClick={() => toggleWeekday(day.id)}
+                        className={styles.weekdayPill}
+                      >
+                        {day.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {currentRepeatType === "monthly" && (
+              <div className={styles.fieldGroup}>
+                <p className={styles.fieldLabel}>On this date</p>
+                <div className={styles.inlineRow}>
+                  <span className={styles.inlineLabel}>Day</span>
+                  <DayOfMonthInput
+                    value={currentDayOfMonth}
+                    onValueChange={setDayOfMonth}
+                    onInvalidChange={setIsDayOfMonthInvalid}
+                    className={styles.numberMaskSemibold}
+                  />
+                  <span className={styles.inlineLabel}>of every month</span>
+                </div>
+                {isDayOfMonthInvalid && (
+                  <p className={styles.error}>{DAY_OF_MONTH_ERROR_MESSAGE}</p>
+                )}
+              </div>
+            )}
+
+            {currentRepeatType === "custom" && (
+              <div className={styles.fieldGroup}>
+                <p className={styles.fieldLabel}>Every</p>
+                <div className={styles.inlineRow}>
+                  <NumberMaskInput
+                    aria-label="Repeat interval"
+                    value={currentEveryCount}
+                    onValueChange={setEveryCount}
+                    className={styles.numberMaskSemibold}
+                  />
+                  <Select
+                    options={EVERY_UNIT_OPTIONS}
+                    value={currentEveryUnit}
+                    onValueChange={setEveryUnit}
+                    className={styles.everyUnitSelect}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className={styles.divider} />
+
+          <div className={styles.onEachDaySection}>
+            <p className={styles.sectionTitle}>On Each Day</p>
+
+            <div className={styles.fieldGroup}>
+              <p className={styles.fieldLabel}>
+                How often would you like to post?
+              </p>
+              <div className={styles.stepperRow}>
+                <button
+                  type="button"
+                  aria-label="Decrease occurrences per day"
+                  onClick={() => stepOccurrences(-1)}
+                  className={styles.stepperButton}
+                >
+                  <Minus aria-hidden="true" className={styles.stepperIcon} />
+                </button>
+                <NumberMaskInput
+                  aria-label="Occurrences per day"
+                  value={String(occurrencesCount)}
+                  onValueChange={(value) => resizeTimeSlots(Number(value || 0))}
+                  className={styles.numberMaskSemibold}
+                />
+                <button
+                  type="button"
+                  aria-label="Increase occurrences per day"
+                  onClick={() => stepOccurrences(1)}
+                  className={styles.stepperButton}
+                >
+                  <Plus aria-hidden="true" className={styles.stepperIcon} />
+                </button>
+                <span className={styles.inlineLabel}>time(s) a day</span>
+              </div>
+            </div>
+
+            {currentTimeSlots.map((slot, index) => (
+              <InputTime
+                key={index}
+                label={
+                  index === 0
+                    ? "When would you like to post?"
+                    : `When would you like to post? (slot ${index + 1})`
+                }
+                showTitle={index === 0}
+                value={slot.time}
+                onValueChange={(value) =>
+                  updateTimeSlot(index, { time: value })
+                }
+                period={slot.period}
+                onPeriodChange={(period) => updateTimeSlot(index, { period })}
+                showDelete
+                onDelete={() => removeTimeSlot(index)}
+                shouldFitContainer
+              />
+            ))}
+          </div>
+        </div>
+        {showScrollbar && (
+          <Scrollbar thumbTop={thumb.top} thumbHeight={thumb.height} />
+        )}
       </div>
+
+      <Button
+        variant="primary"
+        className={styles.saveButton}
+        onClick={onSave}
+        disabled={isSaveDisabled}
+      >
+        Save
+      </Button>
     </div>
   );
 }

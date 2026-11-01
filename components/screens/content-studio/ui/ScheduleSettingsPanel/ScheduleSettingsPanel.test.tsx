@@ -1,8 +1,22 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeAll, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { ScheduleSettingsPanel } from "./ScheduleSettingsPanel";
+
+beforeAll(() => {
+  if (!("ResizeObserver" in window)) {
+    (window as unknown as { ResizeObserver: unknown }).ResizeObserver = vi
+      .fn()
+      .mockImplementation(function ResizeObserverMock() {
+        return {
+          observe: vi.fn(),
+          unobserve: vi.fn(),
+          disconnect: vi.fn(),
+        };
+      });
+  }
+});
 
 describe("ScheduleSettingsPanel", () => {
   it("defaults to the Daily tab with no secondary recurrence field", () => {
