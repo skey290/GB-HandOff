@@ -15,7 +15,30 @@ import {
 } from "@/components/screens/self/ui/self-cluster";
 import { Popover } from "@/components/ui/popover";
 import { Icon } from "@/lib/sprite-icon";
-import { GoalEditDialog } from "@/components/app/goal-setting";
+import {
+  GoalEditDialog,
+  useSelfIdentities,
+  setSelfIdentities,
+  useActiveSelfId,
+  setActiveSelfId,
+  getSelfGoal,
+  setSelfGoal,
+  clearSelfGoal,
+  useAllSelfGoals,
+  getContentGoal,
+  setContentGoal,
+  clearContentGoal,
+  useAllContentGoals,
+  getScheduleSettings,
+  setScheduleSettings,
+  clearScheduleSettings,
+  useAllScheduleSettings,
+} from "@/components/app/goal-setting";
+import { deriveScheduleFromFrequency } from "@/components/screens/content-studio/data";
+import type {
+  ScheduleTimeSlotValue,
+  ScheduleTimeSlotsByRepeatType,
+} from "@/components/screens/content-studio/ui/ScheduleSettingsPanel";
 import {
   AssetGalleryDialog,
   type AssetGalleryPortraitImage,
@@ -30,6 +53,7 @@ import {
   type AssetPanelSelfProfile,
 } from "@/components/screens/self/ui/asset-panel";
 import type {
+  ContentGoalData,
   GoalPostingFrequency,
   GoalSettingAction,
   GoalTimeframe,
@@ -63,14 +87,20 @@ interface PersonaDefinition extends Omit<ClusterSelf, "slotId"> {
   goalActions: GoalSettingAction[];
 }
 
-/** User-edited Goal fields for a Self, layered on top of its PERSONA_POOL defaults (Create Self / Edit Goal both write here). */
+/** User-edited Goal fields for a Self, layered on top of its PERSONA_POOL defaults
+ * (Create Self / Edit Goal both write here). Known for Now/Next live in the shared
+ * `goalsBySelf` store, and posting count/frequency live in the shared
+ * `contentGoalsBySelf` store (both self-goal-data.ts) — those are the single
+ * sources Content Studio also reads/writes, so editing either field in either
+ * app shows up in both. */
 interface GoalOverride {
-  knownForNow: string;
-  knownForNext: string;
-  postingCount: number;
-  postingFrequency: GoalPostingFrequency;
   targetedFollowersIndex: number;
   timeframe: GoalTimeframe;
+}
+
+function formatAssetDate(date: Date) {
+  const pad = (value: number) => String(value).padStart(2, "0");
+  return `${date.getFullYear()}.${pad(date.getMonth() + 1)}.${pad(date.getDate())}`;
 }
 
 function buildGoalActions(id: string): GoalSettingAction[] {
@@ -234,6 +264,37 @@ const INITIAL_SELVES: ClusterSelf[] = [
   { ...PERSONA_POOL[1]!, slotId: "north-east" },
 ];
 
+// Cluster placement (slotId) has no meaning outside this page, so it isn't in
+// the shared self-goal-data.ts store — but it still needs to survive this
+// page's own remounts (Next.js remounts a route's page component on every
+// navigation away and back). A plain useState would reset to this page's
+// initial 2 selves each time, silently colliding a newly-created self back
+// onto "north" — module-scope state (outside the component) persists across
+// those remounts for as long as the tab stays open, same as the rest of
+// self-goal-data.ts's stores.
+let slotIdBySelfIdModuleState: Record<string, string> = Object.fromEntries(
+  INITIAL_SELVES.map((self) => [self.id, self.slotId]),
+);
+
+// Mirrors Content Studio's own DEFAULT_SCHEDULE_* (app/content-studio/page.tsx)
+// — the starting point `deriveScheduleFromFrequency` fills in around when this
+// Self has no schedule of its own yet.
+const DEFAULT_SCHEDULE_SELECTED_WEEKDAYS = ["tue", "wed", "thu"];
+const DEFAULT_SCHEDULE_DAY_OF_MONTH = "";
+const DEFAULT_SCHEDULE_EVERY_COUNT = "";
+const DEFAULT_SCHEDULE_EVERY_UNIT = "days";
+const DEFAULT_SCHEDULE_TIME_SLOTS: ScheduleTimeSlotValue[] = [
+  { time: "10:00", period: "AM" },
+  { time: "02:25", period: "PM" },
+  { time: "09:00", period: "PM" },
+];
+const DEFAULT_SCHEDULE_TIME_SLOTS_BY_TYPE: ScheduleTimeSlotsByRepeatType = {
+  daily: DEFAULT_SCHEDULE_TIME_SLOTS,
+  weekly: DEFAULT_SCHEDULE_TIME_SLOTS,
+  monthly: DEFAULT_SCHEDULE_TIME_SLOTS,
+  custom: DEFAULT_SCHEDULE_TIME_SLOTS,
+};
+
 function DottedBackground() {
   return (
     <div
@@ -251,11 +312,46 @@ function DottedBackground() {
 export default function AssetsPage() {
   const router = useRouter();
   const [gnbExpanded, setGnbExpanded] = React.useState(false);
-  const [selves, setSelves] = React.useState<ClusterSelf[]>(INITIAL_SELVES);
-  const [activeSelfId, setActiveSelfId] = React.useState(INITIAL_SELVES[0]!.id);
+  // Identity (id/label/image) lives in the shared store — synced with
+  // Content Studio's profile switcher. `slotId` (cluster placement) has no
+  // meaning outside this page, so it stays local, keyed by self id.
+  const selfIdentities = useSelfIdentities();
+  // Subscribes this page to every Self's shared goal — Content Studio writes
+  // here too (self-goal-data.ts's `goalsBySelf`), so a plain `getSelfGoal()`
+  // read below only ever shows fresh data because this hook forces a
+  // re-render whenever that shared store changes.
+  useAllSelfGoals();
+  // Same reasoning, for posting count/frequency (self-goal-data.ts's
+  // `contentGoalsBySelf` — the same store Content Studio's Content Goal uses).
+  useAllContentGoals();
+  const [slotIdBySelfId, setSlotIdBySelfIdState] = React.useState(
+    () => slotIdBySelfIdModuleState,
+  );
+  const setSlotIdBySelfId = (
+    update: React.SetStateAction<Record<string, string>>,
+  ) => {
+    setSlotIdBySelfIdState((prev) => {
+      const next =
+        typeof update === "function"
+          ? (
+              update as (prev: Record<string, string>) => Record<string, string>
+            )(prev)
+          : update;
+      slotIdBySelfIdModuleState = next;
+      return next;
+    });
+  };
+  const selves: ClusterSelf[] = selfIdentities.map((identity) => ({
+    ...identity,
+    slotId: (slotIdBySelfId[identity.id] ?? "north") as ClusterSelf["slotId"],
+  }));
+  // Shared with Content Studio's ProfileCard selection — picking a self here
+  // carries over as Content Studio's default selection, and vice versa.
+  const activeSelfId = useActiveSelfId();
   const [pendingSlotId, setPendingSlotId] = React.useState<string | null>(null);
   // Known for Now/Next typed into the Create Self dialog, before that self exists yet —
   // reset whenever the dialog closes (saved or cancelled).
+  const [pendingSelfName, setPendingSelfName] = React.useState("");
   const [pendingGoalNow, setPendingGoalNow] = React.useState("");
   const [pendingGoalGoal, setPendingGoalGoal] = React.useState("");
   // Per-self Goal edits layered over PERSONA_POOL's defaults — written by both the
@@ -284,6 +380,17 @@ export default function AssetsPage() {
   const [galleryOpenForSelfId, setGalleryOpenForSelfId] = React.useState<
     string | null
   >(null);
+  // Set by handleCreateContinue right after a new self is added — marks that
+  // the Asset Gallery currently open is this self's creation flow, not just
+  // an edit. Consumed (and the detail panel switched) once that dialog closes.
+  const [creatingSelfId, setCreatingSelfId] = React.useState<string | null>(
+    null,
+  );
+  // Shown when the Goal step of Create Self (not Edit Goal) is closed — the
+  // Asset Gallery step's equivalent confirm lives inside AssetGalleryDialog
+  // itself (see `isCreatingSelf`/`onCancelCreating`).
+  const [cancelCreateConfirmOpen, setCancelCreateConfirmOpen] =
+    React.useState(false);
   // Self Portrait로 직접 업로드/생성해 추가한 이미지 — selfId별로 쌓인다. 기존
   // 두 Self(Data Scientist/Office Worker)는 이미 완료된 데모 데이터라 자기
   // 이미지로 시드하고, 새로 만든 Self는 사용자가 업로드하기 전까지 빈 상태다.
@@ -354,7 +461,7 @@ export default function AssetsPage() {
     }));
   };
 
-  const handleGeneratePortrait = (src: string) => {
+  const handleGeneratePortrait = (src: string, isFirstOfBatch: boolean) => {
     if (!galleryOpenForSelfId) return;
     setPortraitImagesBySelfId((prev) => ({
       ...prev,
@@ -364,24 +471,19 @@ export default function AssetsPage() {
           id: `generated-${prev[galleryOpenForSelfId]?.length ?? 0}`,
           src,
           alt: "Generated self portrait",
+          date: formatAssetDate(new Date()),
         },
       ],
     }));
-    // A newly added portrait becomes this self's main image everywhere it's shown.
-    setSelves((prev) =>
-      prev.map((self) =>
-        self.id === galleryOpenForSelfId ? { ...self, image: src } : self,
-      ),
-    );
+    // The first portrait of a batch becomes this self's main image everywhere it's shown.
+    if (isFirstOfBatch) {
+      updateSelfIdentity(galleryOpenForSelfId, { image: src });
+    }
   };
 
   const handleSetMainPortrait = (src: string) => {
     if (!galleryOpenForSelfId) return;
-    setSelves((prev) =>
-      prev.map((self) =>
-        self.id === galleryOpenForSelfId ? { ...self, image: src } : self,
-      ),
-    );
+    updateSelfIdentity(galleryOpenForSelfId, { image: src });
   };
 
   const handleReplacePortrait = (imageId: string, newSrc: string) => {
@@ -401,11 +503,7 @@ export default function AssetsPage() {
       selves.find((self) => self.id === galleryOpenForSelfId)?.image ===
         replacedImage.src
     ) {
-      setSelves((prev) =>
-        prev.map((self) =>
-          self.id === galleryOpenForSelfId ? { ...self, image: newSrc } : self,
-        ),
-      );
+      updateSelfIdentity(galleryOpenForSelfId, { image: newSrc });
     }
   };
 
@@ -435,19 +533,96 @@ export default function AssetsPage() {
     (persona) => !usedPersonaIds.has(persona.id),
   );
 
-  // Merges a Self's saved Goal edits (if any) over its PERSONA_POOL demo defaults.
+  // Merges a Self's saved Goal edits (if any) over its PERSONA_POOL demo
+  // defaults. Known for Now/Next come from the shared `goalsBySelf` store
+  // (so Content Studio sees the same values) — everything else still comes
+  // from the local `goalOverridesBySelfId`.
   const getEffectivePersona = (personaId: string): PersonaDefinition => {
     const base =
       PERSONA_POOL.find((persona) => persona.id === personaId) ??
       PERSONA_POOL[0]!;
     const override = goalOverridesBySelfId[personaId];
-    return override ? { ...base, ...override } : base;
+    const sharedGoal = getSelfGoal(personaId);
+    const sharedContentGoal = getContentGoal(personaId);
+    return {
+      ...base,
+      ...(override ?? {}),
+      knownForNow: sharedGoal?.now ?? base.knownForNow,
+      knownForNext: sharedGoal?.next ?? base.knownForNext,
+      postingCount: sharedContentGoal?.postingCount ?? base.postingCount,
+      postingFrequency:
+        sharedContentGoal?.postingFrequencyUnit ?? base.postingFrequency,
+    };
   };
 
   const updateGoalOverride = (selfId: string, patch: Partial<GoalOverride>) => {
     setGoalOverridesBySelfId((prev) => {
       const current = prev[selfId] ?? getEffectivePersona(selfId);
       return { ...prev, [selfId]: { ...current, ...patch } };
+    });
+  };
+
+  // Self Name lives on the self itself (like `image`), not in `goalOverridesBySelfId` —
+  // it's shown on the canvas node/dropdowns too, not just inside Goal Setting.
+  const updateSelfIdentity = (
+    selfId: string,
+    patch: Partial<Omit<ClusterSelf, "id" | "slotId">>,
+  ) => {
+    setSelfIdentities(
+      selfIdentities.map((identity) =>
+        identity.id === selfId ? { ...identity, ...patch } : identity,
+      ),
+    );
+  };
+
+  const updateSelfLabel = (selfId: string, label: string) =>
+    updateSelfIdentity(selfId, { label });
+
+  // Posting count/frequency live in the shared `contentGoalsBySelf` store
+  // (Content Studio's Content Goal) — merge onto whatever's already there
+  // (or a fresh/empty Content Goal) the same way Content Studio's own Goal
+  // Setting save does.
+  const updateContentGoalFrequency = (
+    selfId: string,
+    patch: Partial<
+      Pick<ContentGoalData, "postingCount" | "postingFrequencyUnit">
+    >,
+  ) => {
+    const current = getContentGoal(selfId) ?? {
+      contentGoal: "",
+      pillars: [],
+      ratio: "Balanced" as const,
+      postingCount: getEffectivePersona(selfId).postingCount,
+      postingFrequencyUnit: getEffectivePersona(selfId).postingFrequency,
+    };
+    const next = { ...current, ...patch };
+    setContentGoal(selfId, next);
+
+    // Also push a derived schedule — same as Content Studio's own Self
+    // Goal/Content Goal save — so its Schedule Settings panel picks up the
+    // new cadence too, whichever app the edit came from.
+    const currentSchedule = getScheduleSettings(selfId);
+    const derived = deriveScheduleFromFrequency(
+      next.postingCount,
+      next.postingFrequencyUnit,
+      {
+        selectedWeekdays:
+          currentSchedule?.selectedWeekdays ??
+          DEFAULT_SCHEDULE_SELECTED_WEEKDAYS,
+        dayOfMonth:
+          currentSchedule?.dayOfMonth ?? DEFAULT_SCHEDULE_DAY_OF_MONTH,
+        timeSlotsByType:
+          currentSchedule?.timeSlotsByType ??
+          DEFAULT_SCHEDULE_TIME_SLOTS_BY_TYPE,
+      },
+    );
+    setScheduleSettings(selfId, {
+      repeatType: derived.repeatType,
+      selectedWeekdays: derived.selectedWeekdays,
+      dayOfMonth: derived.dayOfMonth,
+      everyCount: currentSchedule?.everyCount ?? DEFAULT_SCHEDULE_EVERY_COUNT,
+      everyUnit: currentSchedule?.everyUnit ?? DEFAULT_SCHEDULE_EVERY_UNIT,
+      timeSlotsByType: derived.timeSlotsByType,
     });
   };
 
@@ -458,31 +633,81 @@ export default function AssetsPage() {
       setPendingSlotId(null);
       return;
     }
-    // Only Known for Now/Next are collected at creation — the rest of the Goal
-    // (posting cadence, follower target, timeframe) carries over from the demo
-    // persona as a rough starting point, same as the rest of its profile data.
+    // Known for Now/Next and posting count/frequency go to the shared
+    // goalsBySelf/contentGoalsBySelf stores (Content Studio reads/writes the
+    // same ones) — the rest of the Goal (follower target, timeframe) carries
+    // over from the demo persona as a rough starting point, same as the rest
+    // of its profile data.
+    setSelfGoal(nextPersona.id, { now: pendingGoalNow, next: pendingGoalGoal });
+    setContentGoal(nextPersona.id, {
+      contentGoal: "",
+      pillars: [],
+      ratio: "Balanced",
+      postingCount: nextPersona.postingCount,
+      postingFrequencyUnit: nextPersona.postingFrequency,
+    });
     setGoalOverridesBySelfId((prev) => ({
       ...prev,
       [nextPersona.id]: {
-        knownForNow: pendingGoalNow,
-        knownForNext: pendingGoalGoal,
-        postingCount: nextPersona.postingCount,
-        postingFrequency: nextPersona.postingFrequency,
         targetedFollowersIndex: nextPersona.targetedFollowersIndex,
         timeframe: nextPersona.timeframe,
       },
     }));
-    setSelves((prev) => [
-      ...prev,
-      { ...nextPersona, slotId: pendingSlotId as ClusterSelf["slotId"] },
+    setSelfIdentities([
+      ...selfIdentities,
+      {
+        id: nextPersona.id,
+        label: pendingSelfName.trim(),
+        image: nextPersona.image,
+      },
     ]);
+    setSlotIdBySelfId((prev) => ({
+      ...prev,
+      [nextPersona.id]: pendingSlotId,
+    }));
+    // Only becomes the selected self once Asset Gallery closes — see
+    // `creatingSelfId` below. Switching the detail panel mid-creation (while
+    // the Goal step or the portrait step is still open) would be jarring.
+    setCreatingSelfId(nextPersona.id);
     setPendingSlotId(null);
+    setPendingSelfName("");
     setPendingGoalNow("");
     setPendingGoalGoal("");
     goToAssetGallery(nextPersona.id);
   };
 
   const goToAssetGallery = (selfId: string) => setGalleryOpenForSelfId(selfId);
+
+  /** Rolls back a self whose creation was confirmed-cancelled mid-flow — undoes everything `handleCreateContinue` committed, plus any reference images uploaded in Asset Gallery along the way. */
+  const handleCancelCreatingSelf = () => {
+    const id = creatingSelfId;
+    if (id) {
+      setSelfIdentities(
+        selfIdentities.filter((identity) => identity.id !== id),
+      );
+      setSlotIdBySelfId((prev) => {
+        const { [id]: _removed, ...rest } = prev;
+        return rest;
+      });
+      clearSelfGoal(id);
+      clearContentGoal(id);
+      clearScheduleSettings(id);
+      setGoalOverridesBySelfId((prev) => {
+        const { [id]: _removed, ...rest } = prev;
+        return rest;
+      });
+      setPortraitImagesBySelfId((prev) => {
+        const { [id]: _removed, ...rest } = prev;
+        return rest;
+      });
+      setReferenceImagesBySelfId((prev) => {
+        const { [id]: _removed, ...rest } = prev;
+        return rest;
+      });
+    }
+    setCreatingSelfId(null);
+    setGalleryOpenForSelfId(null);
+  };
 
   const handleConfirmArchive = () => {
     const self = archivingSelf;
@@ -500,13 +725,22 @@ export default function AssetsPage() {
       addArchivedImage(self.id, self.image);
     }
     const remaining = selves.filter((s) => s.id !== self.id);
-    setSelves(remaining);
+    setSelfIdentities(
+      selfIdentities.filter((identity) => identity.id !== self.id),
+    );
+    setSlotIdBySelfId((prev) => {
+      const { [self.id]: _removed, ...rest } = prev;
+      return rest;
+    });
     setArchivedSelves((prev) => [...prev, self]);
     if (activeSelfId === self.id) {
       setActiveSelfId(remaining[0]!.id);
     }
     // Clears this Self's Goal edits so a later "+" that reuses the same
     // PERSONA_POOL id (once it's unused again) doesn't inherit stale text.
+    clearSelfGoal(self.id);
+    clearContentGoal(self.id);
+    clearScheduleSettings(self.id);
     setGoalOverridesBySelfId((prev) => {
       const next = { ...prev };
       delete next[self.id];
@@ -565,12 +799,11 @@ export default function AssetsPage() {
   };
 
   const activePersona = getEffectivePersona(activeSelfId);
+  const activeSelf = selves.find((self) => self.id === activeSelfId);
   const activeSelfProfile: AssetPanelSelfProfile = {
     ...activePersona,
-    image:
-      selves.find((self) => self.id === activeSelfId)?.image ??
-      activePersona.image,
-    role: activePersona.label,
+    image: activeSelf?.image ?? activePersona.image,
+    role: activeSelf?.label ?? activePersona.label,
   };
   const editingGoalPersona = editingGoalSelfId
     ? getEffectivePersona(editingGoalSelfId)
@@ -651,12 +884,10 @@ export default function AssetsPage() {
         key={`create-self-${pendingSlotId ?? "closed"}`}
         open={pendingSlotId !== null}
         onOpenChange={(open) => {
-          if (!open) {
-            setPendingSlotId(null);
-            setPendingGoalNow("");
-            setPendingGoalGoal("");
-          }
+          if (!open) setCancelCreateConfirmOpen(true);
         }}
+        selfName={pendingSelfName}
+        onSelfNameChange={setPendingSelfName}
         now={pendingGoalNow}
         onNowChange={setPendingGoalNow}
         goal={pendingGoalGoal}
@@ -669,25 +900,37 @@ export default function AssetsPage() {
         key={`edit-goal-${editingGoalSelfId ?? "closed"}`}
         open={editingGoalSelfId !== null}
         onOpenChange={(open) => !open && setEditingGoalSelfId(null)}
+        selfName={selves.find((self) => self.id === editingGoalSelfId)?.label}
+        onSelfNameChange={(value) =>
+          editingGoalSelfId && updateSelfLabel(editingGoalSelfId, value)
+        }
         now={editingGoalPersona?.knownForNow}
         onNowChange={(value) =>
           editingGoalSelfId &&
-          updateGoalOverride(editingGoalSelfId, { knownForNow: value })
+          setSelfGoal(editingGoalSelfId, {
+            now: value,
+            next: editingGoalPersona?.knownForNext ?? "",
+          })
         }
         goal={editingGoalPersona?.knownForNext}
         onGoalChange={(value) =>
           editingGoalSelfId &&
-          updateGoalOverride(editingGoalSelfId, { knownForNext: value })
+          setSelfGoal(editingGoalSelfId, {
+            now: editingGoalPersona?.knownForNow ?? "",
+            next: value,
+          })
         }
         postingCount={editingGoalPersona?.postingCount}
         onPostingCountChange={(value) =>
           editingGoalSelfId &&
-          updateGoalOverride(editingGoalSelfId, { postingCount: value })
+          updateContentGoalFrequency(editingGoalSelfId, { postingCount: value })
         }
         postingFrequency={editingGoalPersona?.postingFrequency}
         onPostingFrequencyChange={(value) =>
           editingGoalSelfId &&
-          updateGoalOverride(editingGoalSelfId, { postingFrequency: value })
+          updateContentGoalFrequency(editingGoalSelfId, {
+            postingFrequencyUnit: value,
+          })
         }
         targetedFollowersIndex={editingGoalPersona?.targetedFollowersIndex}
         onTargetedFollowersIndexChange={(index) =>
@@ -727,9 +970,44 @@ export default function AssetsPage() {
         onConfirm={handleConfirmDeleteArchivedSelf}
       />
 
+      <Popover
+        type="warning"
+        open={cancelCreateConfirmOpen}
+        onOpenChange={setCancelCreateConfirmOpen}
+        title="Cancel creating this self?"
+        description="What you've entered so far won't be saved."
+        leadingIcon={<Icon id="triangle-alert-icon" />}
+        cancelLabel="Keep editing"
+        confirmLabel="Cancel creating"
+        onCancel={() => setCancelCreateConfirmOpen(false)}
+        onConfirm={() => {
+          setCancelCreateConfirmOpen(false);
+          setPendingSlotId(null);
+          setPendingSelfName("");
+          setPendingGoalNow("");
+          setPendingGoalGoal("");
+        }}
+      />
+
       <AssetGalleryDialog
         open={galleryOpenForSelfId !== null}
-        onOpenChange={(open) => !open && setGalleryOpenForSelfId(null)}
+        onOpenChange={(open) => {
+          if (open) return;
+          // Closing out of a just-created self's Asset Gallery is what
+          // "finishes" making it — only then does it become the selected self.
+          // (The zero-portrait "still creating" case never reaches here — see
+          // `isCreatingSelf`/`onCancelCreating` below.)
+          if (galleryOpenForSelfId && galleryOpenForSelfId === creatingSelfId) {
+            setActiveSelfId(galleryOpenForSelfId);
+            setCreatingSelfId(null);
+          }
+          setGalleryOpenForSelfId(null);
+        }}
+        isCreatingSelf={
+          galleryOpenForSelfId !== null &&
+          galleryOpenForSelfId === creatingSelfId
+        }
+        onCancelCreating={handleCancelCreatingSelf}
         selves={assetGallerySelfOptions}
         selfId={galleryOpenForSelfId ?? ""}
         onSelfIdChange={setGalleryOpenForSelfId}
@@ -737,6 +1015,9 @@ export default function AssetsPage() {
           portraitImagesBySelfId[galleryOpenForSelfId ?? ""] ?? []
         }
         onGenerate={handleGeneratePortrait}
+        mainPortraitSrc={
+          selves.find((self) => self.id === galleryOpenForSelfId)?.image
+        }
         onSetMainPortrait={handleSetMainPortrait}
         onReplacePortrait={handleReplacePortrait}
         onDeletePortraitImage={handleDeletePortraitImage}

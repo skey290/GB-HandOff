@@ -44,6 +44,7 @@ interface AssetGalleryCardPlaygroundProps {
   image: string;
   alt: string;
   date: string;
+  isMainPortrait: boolean;
   title: string;
   description: string;
   emptyLabel: string;
@@ -71,6 +72,7 @@ function AssetGalleryCardPlayground({
   image,
   alt,
   date,
+  isMainPortrait,
   title,
   description,
   emptyLabel,
@@ -98,6 +100,7 @@ function AssetGalleryCardPlayground({
       image={isEmpty ? undefined : image}
       alt={alt}
       date={type === "default" ? date : undefined}
+      isMainPortrait={type === "default" ? isMainPortrait : undefined}
       onUpload={onUpload}
       emptyLabel={emptyLabel}
       onEmptyClick={type === "empty (open dialog)" ? onEmptyClick : undefined}
@@ -139,6 +142,16 @@ const meta = {
   image={asset.url}
   alt={asset.alt}
   date={asset.date}
+  menuOptions={MENU_OPTIONS}
+  onSelectMenuOption={(value) => handleMenuAction(value)}
+/>
+
+// Self Portrait grid — "Main" badge marks the self's current main portrait
+<AssetGalleryCard
+  image={asset.url}
+  alt={asset.alt}
+  date={asset.date}
+  isMainPortrait={asset.src === mainPortraitSrc}
   menuOptions={MENU_OPTIONS}
   onSelectMenuOption={(value) => handleMenuAction(value)}
 />
@@ -216,6 +229,7 @@ const meta = {
     image: { control: "text" },
     alt: { control: "text" },
     date: { control: "text" },
+    isMainPortrait: { control: "boolean" },
     title: { control: "text" },
     description: { control: "text" },
     emptyLabel: { control: "text" },
@@ -226,6 +240,7 @@ const meta = {
     image: "/images/personas/self-default.jpg",
     alt: "Uploaded reference",
     date: "2025.05.17",
+    isMainPortrait: false,
     title: "Deep Chroma",
     description: "Baroque-inspired chiaroscuro",
     emptyLabel: "Upload Your Image",

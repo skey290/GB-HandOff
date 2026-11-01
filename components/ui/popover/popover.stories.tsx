@@ -1,6 +1,6 @@
 import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/nextjs";
-import { fn } from "storybook/test";
+import { fn, userEvent, within } from "storybook/test";
 
 import { Popover, type PopoverProps } from "./popover";
 
@@ -57,7 +57,7 @@ const meta = {
       description: {
         // Verbatim text from the Figma component's description field
         component:
-          "A centred modal panel that interrupts the user with a notification or a warning and waits for a response. Type selects which of the two it is. It has no trigger of its own and is not anchored to one — the parent decides when it is open. Use Tooltip for a short hint attached to a trigger.",
+          "A centred modal panel that interrupts the user with a notification or a warning and waits for a response. Type selects which of the two it is. It has no trigger of its own and is not anchored to one — the parent decides when it is open. Use Tooltip for a short hint attached to a trigger. Escape does not dismiss it — only Cancel/Confirm can, since it's asking the user to explicitly decide.",
         story:
           "Canvas uses a demo-only local-state wrapper so the trigger button works in isolation. The code below is what a real page writes — see docs/components/popover.md.",
       },
@@ -113,3 +113,21 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Playground: Story = {};
+
+export const DoesNotCloseOnEscape: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Pressing Escape leaves it open — only Cancel or Confirm dismisses it.",
+      },
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement.ownerDocument.body);
+    await canvas.findByRole("alertdialog");
+
+    await userEvent.keyboard("{Escape}");
+    await canvas.findByRole("alertdialog");
+  },
+};

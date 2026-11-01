@@ -40,16 +40,25 @@ import {
   GoalEditDialog,
   ContentGoalDialog,
   ToneOfVoiceDialog,
-  SELF_OPTIONS,
+  getScheduleSettings,
+  setScheduleSettings,
+  useAllScheduleSettings,
   getSelfImage,
   getSelfLabel,
   setContentGoal,
   setSelfGoal,
+  setSelfIdentities,
   setToneOfVoice,
+  setActiveSelfId,
   useContentGoal,
   useSelfGoal,
+  useSelfIdentities,
   useToneOfVoice,
+  useActiveSelfId,
   type ContentGoalData,
+  type GoalPostingFrequency,
+  type ScheduleSettingsData,
+  type SelfOption,
   type ToneOfVoiceData,
 } from "@/components/app/goal-setting";
 import {
@@ -60,7 +69,10 @@ import {
   createNextWeekSlots,
   deriveFrequencyFromSchedule,
   deriveScheduleFromFrequency,
+  generateSlotsForRange,
   INITIAL_SLOTS,
+  parseSlotDate,
+  type DerivedScheduleSettings,
   type Post,
   type PostPlatform,
   type ScheduleSlot,
@@ -153,7 +165,16 @@ const DEFAULT_SCHEDULE_EVERY_UNIT = "days";
 export default function ContentStudioPage() {
   const router = useRouter();
   const [gnbExpanded, setGnbExpanded] = React.useState(false);
-  const [selfValue, setSelfValue] = React.useState("data-scientist");
+  const selfIdentities = useSelfIdentities();
+  const selfOptions: SelfOption[] = selfIdentities.map((identity) => ({
+    value: identity.id,
+    label: identity.label,
+    image: identity.image,
+  }));
+  // Shared with Self app's canvas selection — picking a self there carries
+  // over as this page's default selection, and vice versa.
+  const selfValue = useActiveSelfId();
+  const setSelfValue = setActiveSelfId;
   // Analysis 탭 콘텐츠(AnalysisView)와 Archive 서브페이지는 핸드오프 범위
   // 밖이라 탭/아이콘만 그대로 두고 실제 연동은 하지 않는다.
   const [activeTab, setActiveTab] = React.useState(1);
@@ -219,55 +240,63 @@ export default function ContentStudioPage() {
   const [scheduleView, setScheduleView] = React.useState<"list" | "settings">(
     "list",
   );
-  // Repeat 설정도 posts/slots와 마찬가지로 self별 독립 — 한 번도 커스터마이즈
-  // 안 한 self는 DEFAULT_SCHEDULE_*로 시작한다.
-  const [scheduleTimeSlotsByTypeBySelf, setScheduleTimeSlotsByTypeBySelf] =
-    React.useState<Record<string, ScheduleTimeSlotsByRepeatType>>({});
-  const [scheduleRepeatTypeBySelf, setScheduleRepeatTypeBySelf] =
-    React.useState<Record<string, ScheduleSettingsPanelRepeatType>>({});
-  const [scheduleSelectedWeekdaysBySelf, setScheduleSelectedWeekdaysBySelf] =
-    React.useState<Record<string, string[]>>({});
-  const [scheduleDayOfMonthBySelf, setScheduleDayOfMonthBySelf] =
-    React.useState<Record<string, string>>({});
-  const [scheduleEveryCountBySelf, setScheduleEveryCountBySelf] =
-    React.useState<Record<string, string>>({});
-  const [scheduleEveryUnitBySelf, setScheduleEveryUnitBySelf] = React.useState<
-    Record<string, string>
-  >({});
+  // Bumped whenever Self Goal/Content Goal's save pushes a derived schedule
+  // in from outside — included in ScheduleSettingsPanel's key below so an
+  // already-open panel remounts and re-seeds its uncontrolled draft from the
+  // fresh schedule state, instead of silently keeping its stale draft (which
+  // would otherwise overwrite the fresh sync right back out when its own
+  // Save is clicked next).
+  const [scheduleSyncVersion, setScheduleSyncVersion] = React.useState(0);
+  // Repeat 설정은 self-goal-data.ts의 공유 스토어에 산다 — Self 앱의 Self
+  // Goal에서 포스팅 빈도를 바꿔도 여기서 파생된 스케줄이 보이도록(그 반대도
+  // 마찬가지). 한 번도 커스터마이즈 안 한 self는 DEFAULT_SCHEDULE_*로 시작.
+  useAllScheduleSettings();
+  const currentScheduleSettings = getScheduleSettings(selfValue);
 
   const scheduleTimeSlotsByType =
-    scheduleTimeSlotsByTypeBySelf[selfValue] ??
+    currentScheduleSettings?.timeSlotsByType ??
     DEFAULT_SCHEDULE_TIME_SLOTS_BY_TYPE;
   const scheduleRepeatType =
-    scheduleRepeatTypeBySelf[selfValue] ?? DEFAULT_SCHEDULE_REPEAT_TYPE;
+    currentScheduleSettings?.repeatType ?? DEFAULT_SCHEDULE_REPEAT_TYPE;
   const scheduleSelectedWeekdays =
-    scheduleSelectedWeekdaysBySelf[selfValue] ??
+    currentScheduleSettings?.selectedWeekdays ??
     DEFAULT_SCHEDULE_SELECTED_WEEKDAYS;
   const scheduleDayOfMonth =
-    scheduleDayOfMonthBySelf[selfValue] ?? DEFAULT_SCHEDULE_DAY_OF_MONTH;
+    currentScheduleSettings?.dayOfMonth ?? DEFAULT_SCHEDULE_DAY_OF_MONTH;
   const scheduleEveryCount =
-    scheduleEveryCountBySelf[selfValue] ?? DEFAULT_SCHEDULE_EVERY_COUNT;
+    currentScheduleSettings?.everyCount ?? DEFAULT_SCHEDULE_EVERY_COUNT;
   const scheduleEveryUnit =
-    scheduleEveryUnitBySelf[selfValue] ?? DEFAULT_SCHEDULE_EVERY_UNIT;
+    currentScheduleSettings?.everyUnit ?? DEFAULT_SCHEDULE_EVERY_UNIT;
 
+  // Functional update (reads the store's CURRENT value at call time, not the
+  // consts captured in this render's closure) — several `setScheduleX` calls
+  // often fire back-to-back synchronously in the same handler (e.g. Self
+  // Goal's onSave), and each one needs to build on what the previous call
+  // just wrote, not stomp it back to this render's stale snapshot.
+  const patchScheduleSettings = (patch: Partial<ScheduleSettingsData>) =>
+    setScheduleSettings(selfValue, (prev) => ({
+      repeatType: prev?.repeatType ?? DEFAULT_SCHEDULE_REPEAT_TYPE,
+      selectedWeekdays:
+        prev?.selectedWeekdays ?? DEFAULT_SCHEDULE_SELECTED_WEEKDAYS,
+      dayOfMonth: prev?.dayOfMonth ?? DEFAULT_SCHEDULE_DAY_OF_MONTH,
+      everyCount: prev?.everyCount ?? DEFAULT_SCHEDULE_EVERY_COUNT,
+      everyUnit: prev?.everyUnit ?? DEFAULT_SCHEDULE_EVERY_UNIT,
+      timeSlotsByType:
+        prev?.timeSlotsByType ?? DEFAULT_SCHEDULE_TIME_SLOTS_BY_TYPE,
+      ...patch,
+    }));
   const setScheduleTimeSlotsByType = (value: ScheduleTimeSlotsByRepeatType) =>
-    setScheduleTimeSlotsByTypeBySelf((prev) => ({
-      ...prev,
-      [selfValue]: value,
-    }));
+    patchScheduleSettings({ timeSlotsByType: value });
   const setScheduleRepeatType = (value: ScheduleSettingsPanelRepeatType) =>
-    setScheduleRepeatTypeBySelf((prev) => ({ ...prev, [selfValue]: value }));
+    patchScheduleSettings({ repeatType: value });
   const setScheduleSelectedWeekdays = (value: string[]) =>
-    setScheduleSelectedWeekdaysBySelf((prev) => ({
-      ...prev,
-      [selfValue]: value,
-    }));
+    patchScheduleSettings({ selectedWeekdays: value });
   const setScheduleDayOfMonth = (value: string) =>
-    setScheduleDayOfMonthBySelf((prev) => ({ ...prev, [selfValue]: value }));
+    patchScheduleSettings({ dayOfMonth: value });
   const setScheduleEveryCount = (value: string) =>
-    setScheduleEveryCountBySelf((prev) => ({ ...prev, [selfValue]: value }));
+    patchScheduleSettings({ everyCount: value });
   const setScheduleEveryUnit = (value: string) =>
-    setScheduleEveryUnitBySelf((prev) => ({ ...prev, [selfValue]: value }));
+    patchScheduleSettings({ everyUnit: value });
 
   const draftScheduleTimeSlotsByTypeRef = React.useRef(scheduleTimeSlotsByType);
   const draftScheduleRepeatTypeRef = React.useRef(scheduleRepeatType);
@@ -277,10 +306,12 @@ export default function ContentStudioPage() {
   const draftScheduleDayOfMonthRef = React.useRef(scheduleDayOfMonth);
   const draftScheduleEveryCountRef = React.useRef(scheduleEveryCount);
   const draftScheduleEveryUnitRef = React.useRef(scheduleEveryUnit);
-  // ScheduleSettingsPanel is remounted (key={selfValue}) on self switch, but
-  // these drafts live here in the parent and don't reset on their own — if
-  // Save fires before the user touches the freshly-mounted panel, it would
-  // otherwise commit the previous self's stale draft into the new self.
+  // ScheduleSettingsPanel is remounted (key={selfValue}-{scheduleSyncVersion})
+  // on self switch AND on an external Self Goal/Content Goal frequency sync,
+  // but these drafts live here in the parent and don't reset on their own —
+  // if Save fires before the user touches the freshly-mounted panel, it
+  // would otherwise commit the previous self's (or the pre-sync) stale draft
+  // right back over the fresh state.
   React.useEffect(() => {
     draftScheduleTimeSlotsByTypeRef.current = scheduleTimeSlotsByType;
     draftScheduleRepeatTypeRef.current = scheduleRepeatType;
@@ -296,7 +327,12 @@ export default function ContentStudioPage() {
   const selfGoal = useSelfGoal(selfValue);
   const contentGoal = useContentGoal(selfValue);
   const toneOfVoice = useToneOfVoice(selfValue);
-  const draftGoalRef = React.useRef({ now: "", next: "" });
+  const draftGoalRef = React.useRef({
+    now: "",
+    next: "",
+    postingCount: 3,
+    postingFrequency: "Week" as GoalPostingFrequency,
+  });
   const draftContentGoalRef = React.useRef<ContentGoalData>({
     contentGoal: "",
     pillars: [],
@@ -360,9 +396,14 @@ export default function ContentStudioPage() {
     return groupOrder.map((key) => groupsByKey.get(key)!);
   }, [slots, posts]);
 
+  const isContentGoalComplete =
+    contentGoal !== undefined &&
+    contentGoal.contentGoal.trim().length > 0 &&
+    contentGoal.pillars.length > 0 &&
+    contentGoal.ratio !== undefined;
   const missingProfileItems = [
     selfGoal === undefined && "Self-Goal",
-    contentGoal === undefined && "Content Goal",
+    !isContentGoalComplete && "Content Goal",
     toneOfVoice === undefined && "Tone of Voice",
   ].filter((item): item is string => Boolean(item));
 
@@ -434,6 +475,35 @@ export default function ContentStudioPage() {
               times,
             )
           : createNextDaySlots(slots, nextIndex, times);
+  };
+
+  /** Self Goal/Content Goal에서 빈도가 바뀔 때 호출 — 이미 포스트가 배정된
+   * 슬롯은 그대로 두고, 빈("No content") 슬롯만 지운 뒤 현재 날짜 범위를
+   * 새 반복 설정으로 다시 채운다. */
+  const regenerateEmptySchedule = (derived: DerivedScheduleSettings) => {
+    if (!dateRange.from || !dateRange.to) return;
+    const times = formatScheduleTimeSlots(
+      derived.timeSlotsByType[derived.repeatType],
+    );
+    const preserved = slots.filter((slot) => slot.postId !== null);
+    const generated = generateSlotsForRange(
+      { start: dateRange.from, end: dateRange.to },
+      derived.repeatType,
+      {
+        selectedWeekdays: derived.selectedWeekdays,
+        dayOfMonth: derived.dayOfMonth,
+      },
+      times,
+      preserved.length + 1,
+    );
+    const merged = [
+      ...preserved,
+      ...generated.map((slot) => ({ ...slot, postId: null })),
+    ].sort(
+      (a, b) =>
+        parseSlotDate(a.date).getTime() - parseSlotDate(b.date).getTime(),
+    );
+    setSlots(merged);
   };
 
   const handleAddSchedule = () => {
@@ -514,6 +584,8 @@ export default function ContentStudioPage() {
     draftGoalRef.current = {
       now: selfGoal?.now ?? "",
       next: selfGoal?.next ?? "",
+      postingCount: contentGoal?.postingCount ?? 3,
+      postingFrequency: contentGoal?.postingFrequencyUnit ?? "Week",
     };
     setGoalOpen(true);
   };
@@ -561,7 +633,7 @@ export default function ContentStudioPage() {
     setCompletionQueue(
       [
         selfGoal === undefined && "self",
-        contentGoal === undefined && "content",
+        !isContentGoalComplete && "content",
         toneOfVoice === undefined && "tone",
       ].filter((item): item is "self" | "content" | "tone" => Boolean(item)),
     );
@@ -623,14 +695,14 @@ export default function ContentStudioPage() {
                 className="shrink-0"
                 open={profileOpen}
                 avatarSrc={getSelfImage(selfValue)}
-                options={SELF_OPTIONS}
+                options={selfOptions}
                 value={selfValue}
                 onValueChange={setSelfValue}
                 onToggleOpen={() => setProfileOpen((prev) => !prev)}
                 isSelfGoalComplete={selfGoal !== undefined}
                 knownForNowText={selfGoal?.now}
                 knownForNextText={selfGoal?.next}
-                isContentGoalComplete={contentGoal !== undefined}
+                isContentGoalComplete={isContentGoalComplete}
                 contentGoalText={
                   contentGoal
                     ? [
@@ -662,7 +734,7 @@ export default function ContentStudioPage() {
               />
               {scheduleView === "settings" ? (
                 <ScheduleSettingsPanel
-                  key={selfValue}
+                  key={`${selfValue}-${scheduleSyncVersion}`}
                   className="min-h-0 flex-1"
                   defaultRepeatType={scheduleRepeatType}
                   onRepeatTypeChange={(type) => {
@@ -920,20 +992,32 @@ export default function ContentStudioPage() {
                 : post,
             ),
           );
-          setEditingPostId(null);
         }}
-        onArchive={() => editingPostId && handleArchivePost(editingPostId)}
+        onArchive={() =>
+          editingPostId && setArchiveConfirmPostId(editingPostId)
+        }
         selfLabel={getSelfLabel(selfValue)}
         avatarSrc={getSelfImage(selfValue)}
       />
 
       <GoalEditDialog
+        key={selfValue}
         open={goalOpen}
         onOpenChange={(open) => {
           setGoalOpen(open);
           if (!open) advanceCompletionQueue();
         }}
         colorScheme="light"
+        selfName={getSelfLabel(selfValue)}
+        onSelfNameChange={(value) =>
+          setSelfIdentities(
+            selfIdentities.map((identity) =>
+              identity.id === selfValue
+                ? { ...identity, label: value }
+                : identity,
+            ),
+          )
+        }
         defaultNow={selfGoal?.now ?? ""}
         defaultGoal={selfGoal?.next ?? ""}
         onNowChange={(value) => {
@@ -942,16 +1026,46 @@ export default function ContentStudioPage() {
         onGoalChange={(value) => {
           draftGoalRef.current.next = value;
         }}
+        onPostingCountChange={(value) => {
+          draftGoalRef.current.postingCount = value;
+        }}
+        onPostingFrequencyChange={(value) => {
+          draftGoalRef.current.postingFrequency = value;
+        }}
         onSave={() => {
           setSelfGoal(selfValue, {
             now: draftGoalRef.current.now,
             next: draftGoalRef.current.next,
           });
+          setContentGoal(selfValue, {
+            ...(contentGoal ?? {
+              contentGoal: "",
+              pillars: [],
+              ratio: "Balanced",
+            }),
+            postingCount: draftGoalRef.current.postingCount,
+            postingFrequencyUnit: draftGoalRef.current.postingFrequency,
+          });
+          const derivedSchedule = deriveScheduleFromFrequency(
+            draftGoalRef.current.postingCount,
+            draftGoalRef.current.postingFrequency,
+            {
+              selectedWeekdays: scheduleSelectedWeekdays,
+              dayOfMonth: scheduleDayOfMonth,
+              timeSlotsByType: scheduleTimeSlotsByType,
+            },
+          );
+          setScheduleRepeatType(derivedSchedule.repeatType);
+          setScheduleSelectedWeekdays(derivedSchedule.selectedWeekdays);
+          setScheduleDayOfMonth(derivedSchedule.dayOfMonth);
+          setScheduleTimeSlotsByType(derivedSchedule.timeSlotsByType);
+          regenerateEmptySchedule(derivedSchedule);
+          setScheduleSyncVersion((version) => version + 1);
           setGoalOpen(false);
           advanceCompletionQueue();
         }}
-        defaultPostingCount={3}
-        defaultPostingFrequency="Day"
+        defaultPostingCount={contentGoal?.postingCount ?? 3}
+        defaultPostingFrequency={contentGoal?.postingFrequencyUnit ?? "Week"}
         defaultTargetedFollowersIndex={1}
         defaultTimeframe="1 year"
       />
@@ -999,6 +1113,8 @@ export default function ContentStudioPage() {
           setScheduleSelectedWeekdays(derivedSchedule.selectedWeekdays);
           setScheduleDayOfMonth(derivedSchedule.dayOfMonth);
           setScheduleTimeSlotsByType(derivedSchedule.timeSlotsByType);
+          regenerateEmptySchedule(derivedSchedule);
+          setScheduleSyncVersion((version) => version + 1);
           setContentGoalOpen(false);
           advanceCompletionQueue();
         }}

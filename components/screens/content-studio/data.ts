@@ -34,7 +34,7 @@ const CAPTION_POOL = [
 
 const HASHTAG_POOL = ["#DataStorytelling", "#StartupFinance", "#BrandVoice"];
 
-const IMAGE_POOL = [
+export const IMAGE_POOL = [
   "/images/personas/self-default.jpg",
   "/images/personas/team-leader.jpg",
   "/images/personas/entrepreneur.jpg",
@@ -97,7 +97,7 @@ export const INITIAL_POSTS: Post[] = createGeneratedPosts(9, 1);
 const MORE_SLOT_TIMES = ["10:00 AM", "02:25 PM", "09:00 PM"];
 const SCHEDULE_YEAR = 2026;
 
-function parseSlotDate(date: string): Date {
+export function parseSlotDate(date: string): Date {
   return new Date(`${date}, ${SCHEDULE_YEAR}`);
 }
 
@@ -212,6 +212,53 @@ export function createCustomIntervalSlot(
     nextDate.setDate(nextDate.getDate() + count);
   }
   return buildDaySlots(nextDate, nextIndex, times);
+}
+
+/** Self Goal/Content Goal에서 빈도가 바뀔 때, 날짜 범위 전체를 새 반복 설정
+ * 기준으로 훑어 매칭되는 날마다 슬롯을 만든다 — `createNext*Slots`들과 달리
+ * 기존 슬롯 뒤에 한 묶음을 잇는 게 아니라 범위 자체를 처음부터 채운다.
+ * "custom"은 이 경로(Self/Content Goal → 빈도 역산)로는 절대 나오지 않아
+ * daily로 폴백 처리한다. */
+export function generateSlotsForRange(
+  range: { start: Date; end: Date },
+  repeatType: ScheduleSettingsPanelRepeatType,
+  settings: { selectedWeekdays: string[]; dayOfMonth: string },
+  times: string[],
+  startIndex: number,
+): Omit<ScheduleSlot, "postId">[] {
+  const results: Omit<ScheduleSlot, "postId">[] = [];
+  let index = startIndex;
+  const monthDay =
+    repeatType === "monthly"
+      ? Math.min(Math.max(Number(settings.dayOfMonth) || 1, 1), 28)
+      : null;
+  const weekdaySet =
+    repeatType === "weekly" ? new Set(settings.selectedWeekdays) : null;
+
+  const cursor = new Date(
+    range.start.getFullYear(),
+    range.start.getMonth(),
+    range.start.getDate(),
+  );
+  const end = new Date(
+    range.end.getFullYear(),
+    range.end.getMonth(),
+    range.end.getDate(),
+  );
+  while (cursor <= end) {
+    const matches = weekdaySet
+      ? weekdaySet.has(WEEKDAY_IDS[(cursor.getDay() + 6) % 7]!)
+      : monthDay !== null
+        ? cursor.getDate() === monthDay
+        : true; // "daily" (and the unreachable "custom" fallback)
+    if (matches) {
+      const slots = buildDaySlots(cursor, index, times);
+      results.push(...slots);
+      index += slots.length;
+    }
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return results;
 }
 
 export interface DerivedScheduleSettings {

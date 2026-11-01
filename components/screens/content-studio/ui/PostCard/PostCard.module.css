@@ -174,9 +174,9 @@
   white-space: nowrap;
   text-overflow: ellipsis;
   font-family: var(--gb-font-sans);
-  font-size: var(--gb-text-base);
+  font-size: var(--gb-text-sm);
   font-weight: var(--gb-font-weight-normal);
-  line-height: var(--gb-leading-6);
+  line-height: var(--gb-leading-5);
   letter-spacing: var(--gb-tracking-normal);
   color: var(--gb-text-subtle);
 }
@@ -196,9 +196,9 @@
 }
 
 .root[data-platform="x"] .date {
-  font-size: var(--gb-text-base);
+  font-size: var(--gb-text-sm);
   font-weight: var(--gb-font-weight-normal);
-  line-height: var(--gb-leading-6);
+  line-height: var(--gb-leading-5);
 }
 
 .root[data-platform="threads"] .date,

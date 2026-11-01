@@ -43,6 +43,9 @@ A complete widget stacking a label over a date trigger; pressing the trigger ope
 
 // Opt out of the forced-dark popover where the surrounding UI is light (e.g. PostingModal)
 <DateSelect shouldForceDark={false} onValueChange={setDate} />
+
+// Keep the popover inside a themed ancestor instead of document.body (see "Composition" below)
+<DateSelect shouldForceDark={false} container={rootNode} onValueChange={setDate} />
 ```
 
 ## Structure
@@ -62,24 +65,26 @@ Five files per the project component rule: `date-select.tsx` / `date-select.modu
 - **The root renders at a fixed 192px in Figma**, and the code matches it as a literal — but 192 looks like a forced value rather than a confirmed spec: the root's two children (the title text and the trigger `Input` frame) are both `Fill`, so the root cannot `HUG`, and no other component or app screen independently reproduces 192 the way e.g. `ButtonGroup`'s 344px is reproduced elsewhere. Given that uncertainty, `shouldFitContainer` defaults to `true` — the 192px is opt-in (`shouldFitContainer={false}`), not the default.
 - The radius is `--gb-radius-scale-md` (8px) — note this differs from `RangeSelect` (10px).
 - The popover forces dark regardless of the site theme by default (the same rule as Popover, Chatbox, RangeSelect, and NotiDropdown), via `shouldForceDark` (default `true`) — the same escape hatch as `Chatbox`, for contexts where Figma draws the surrounding UI light instead (e.g. `PostingModal`).
+- The popover's `PopoverPrimitive.Portal` defaults to `document.body`, like every Radix-portaled component here. That's fine while `shouldForceDark` is left at its default — the popover carries its own `dark` class regardless of where it portals to. But `shouldForceDark={false}` only removes that class from the popover's own wrapper; it does nothing about whatever ambient (OS-driven) theme `document.body` happens to be in. A `shouldForceDark={false}` caller whose surrounding UI is explicitly light (not just "not forced dark") needs the popover to inherit that light context directly — pass `container` pointing at the themed ancestor instead of letting it portal to `body`.
 
 ## Props
 
-| Prop                 | Type                                | Default          | Description                                                                                 |
-| -------------------- | ----------------------------------- | ---------------- | ------------------------------------------------------------------------------------------- |
-| `label`              | `string`                            | `"Date to post"` | Label above the field. Hidden when empty                                                    |
-| `value`              | `Date`                              | —                | Selected date                                                                               |
-| `defaultValue`       | `Date`                              | —                | Initial date when uncontrolled                                                              |
-| `ref`                | `React.Ref<HTMLButtonElement>`      | —                | Forwarded to the trigger `<button>`                                                         |
-| `onValueChange`      | `(date: Date) => void`              | —                | Called on selection. The popover stays open — the user closes it themselves                 |
-| `placeholder`        | `string`                            | `"MM.DD.YYYY"`   | Trigger text while empty                                                                    |
-| `disabled`           | `boolean`                           | `false`          | Disables the trigger; the popover will not open                                             |
-| `minDate`            | `Date`                              | —                | Passed to the calendar                                                                      |
-| `maxDate`            | `Date`                              | —                | Passed to the calendar                                                                      |
-| `disabledDates`      | `Date[]`                            | —                | Passed to the calendar                                                                      |
-| `events`             | `Record<string, CalendarEventType>` | —                | Passed to the calendar                                                                      |
-| `shouldFitContainer` | `boolean`                           | `true`           | Stretch to the parent width instead of the fixed 192px. Pass `false` to use the fixed width |
-| `className`          | `string`                            | —                | Merged onto the root `<div>`                                                                |
+| Prop                 | Type                                | Default          | Description                                                                                                                                                                                           |
+| -------------------- | ----------------------------------- | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `label`              | `string`                            | `"Date to post"` | Label above the field. Hidden when empty                                                                                                                                                              |
+| `value`              | `Date`                              | —                | Selected date                                                                                                                                                                                         |
+| `defaultValue`       | `Date`                              | —                | Initial date when uncontrolled                                                                                                                                                                        |
+| `ref`                | `React.Ref<HTMLButtonElement>`      | —                | Forwarded to the trigger `<button>`                                                                                                                                                                   |
+| `onValueChange`      | `(date: Date) => void`              | —                | Called on selection. The popover stays open — the user closes it themselves                                                                                                                           |
+| `placeholder`        | `string`                            | `"MM.DD.YYYY"`   | Trigger text while empty                                                                                                                                                                              |
+| `disabled`           | `boolean`                           | `false`          | Disables the trigger; the popover will not open                                                                                                                                                       |
+| `minDate`            | `Date`                              | —                | Passed to the calendar                                                                                                                                                                                |
+| `maxDate`            | `Date`                              | —                | Passed to the calendar                                                                                                                                                                                |
+| `disabledDates`      | `Date[]`                            | —                | Passed to the calendar                                                                                                                                                                                |
+| `events`             | `Record<string, CalendarEventType>` | —                | Passed to the calendar                                                                                                                                                                                |
+| `shouldFitContainer` | `boolean`                           | `true`           | Stretch to the parent width instead of the fixed 192px. Pass `false` to use the fixed width                                                                                                           |
+| `className`          | `string`                            | —                | Merged onto the root `<div>`                                                                                                                                                                          |
+| `container`          | `HTMLElement \| null`               | —                | Portal target for the popover. Default (`undefined`) portals to `document.body` via Radix. Pass the surrounding themed root (see States and behaviors above) so the popover renders inside it instead |
 
 ## Variants
 
@@ -116,3 +121,4 @@ There is no `variant` prop. Figma has one axis, `Status`, with five values — `
 
 - **Calendar** (`components/ui/calendar`): the popover body, rendered with `mode="single"`, reporting the selection straight back up. This reuse has a Figma basis beyond visual similarity — Figma's `pressed` state (`7219:10914`) embeds a genuine instance of `Part/Calendar modal` (master `7219:10799`, `Type=default`), confirmed via the instance-id chain, and that instance itself embeds a `Button` instance — so the code's `Calendar` → `Button` nesting mirrors Figma's own structure transitively.
 - The trigger does **not** use the shared `Button` or `Input`. The Figma trigger uses input-field colors (`border-default` + `background-default`), which no Button variant matches, and — unlike every other component in the input family — it has no trailing icon slot at all. It is also not a Figma instance of `Input` (no instance-id chain back to that component), so it is independently drawn rather than reused from either.
+- **`PostingModal`** passes both `shouldForceDark={false}` and `container={rootNode}` (`rootNode` is that modal's own root element, already used identically for its platform `Select`'s `container`) — Figma draws `PostingModal` light throughout, so its "Date to post" field needs the popover to inherit that light context rather than falling back to `document.body`'s ambient theme.

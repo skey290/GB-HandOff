@@ -38,15 +38,29 @@ anywhere in this repo. Every "self", post, schedule, and goal you see is seeded 
 mock data and reset on reload. The two files that matter most if you're replacing this with real
 data:
 
-- `components/app/goal-setting/self-goal-data.ts` — the list of selves (`SELF_OPTIONS`), their
-  goal/tone-of-voice data, all as module-level `let` variables with a hand-rolled
-  pub/sub (`useSelfGoal`, `useContentGoal`, `useToneOfVoice`). Swap the store, keep the hook shape
-  and callers don't need to change.
+- `components/app/goal-setting/self-goal-data.ts` — **the single source of truth shared between
+  `/self` and `/content-studio`.** Six independent module-level `let` stores, each with its own
+  hand-rolled pub/sub (`get*`/`set*`/`use*`, plus a `useAll*` variant on the four keyed-by-self
+  ones for a consumer that reads whichever self id is picked at render time rather than one fixed
+  id): `selfIdentities` (id/label/image — `useSelfIdentities`), `activeSelfId` (which self is
+  currently selected — `useActiveSelfId`), `goalsBySelf` (Known for Now/Next — `useSelfGoal`/
+  `useAllSelfGoals`), `contentGoalsBySelf` (Content Goal + posting frequency — `useContentGoal`/
+  `useAllContentGoals`), `scheduleSettingsBySelf` (Schedule Settings panel's full recurrence rule
+  — `useScheduleSettings`/`useAllScheduleSettings`), and `toneOfVoicesBySelf` (`useToneOfVoice`).
+  Both pages read and write all of these directly (not through props), so editing a self's name,
+  goal, content goal, schedule, or active selection on one page is reflected on the other
+  immediately if the other page is already mounted, or on its next navigation if not — **this only
+  holds within one browser tab.** Each tab is its own JS runtime with its own copy of this module's
+  state; two tabs open side by side do not see each other's edits, only a reload (or navigating
+  via the GNB rather than a fresh URL load) picks up the other tab's writes indirectly through
+  whatever got re-seeded. Swap the store, keep the hook shape, and callers don't need to change.
 - `components/screens/content-studio/data.ts` — post/schedule types and the slot-generation math
-  (`createNextDaySlots`, `deriveScheduleFromFrequency`, etc.). The scheduling _logic_ here is real;
-  only the seed data (`INITIAL_SLOTS`, `createGeneratedPosts`) is fake.
-- `app/self/page.tsx`'s `PERSONA_POOL` — the 8 seeded personas shown in the Self canvas, plus
-  per-self goal overrides kept in local component state (not persisted anywhere).
+  (`createNextDaySlots`, `deriveScheduleFromFrequency`, `generateSlotsForRange`, etc.). The
+  scheduling _logic_ here is real; only the seed data (`INITIAL_SLOTS`, `createGeneratedPosts`) is
+  fake.
+- `app/self/page.tsx`'s `PERSONA_POOL` — the 8 seeded personas shown in the Self canvas. Per-self
+  Goal/Content Goal/Schedule overrides are **not** local component state — they live in
+  `self-goal-data.ts` above, same as Content Studio's.
 
 Replacing dummy data with a real backend means swapping what's inside these stores/constants, not
 rewriting the components that consume them.

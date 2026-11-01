@@ -5,6 +5,7 @@ import { Check, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Icon } from "@/lib/sprite-icon";
+import { Badge } from "@/components/ui/badge";
 import { Select, type SelectOption } from "@/components/ui/select";
 
 import styles from "./asset-gallery-card.module.css";
@@ -20,6 +21,8 @@ export interface AssetGalleryCardProps {
   alt?: string;
   /** Date label shown on the filled card. Omitted skips the label. Ignored on the style card. */
   date?: string;
+  /** Shows a "Main" badge in the bottom-left corner, marking this as the self's current main portrait. Ignored on the style/empty/removable card types. */
+  isMainPortrait?: boolean;
   /** Called with the selected file when uploading via the empty card. Ignored when `onEmptyClick` is given. */
   onUpload?: (file: File) => void;
   /** Label shown on the empty card. On the compact (`isCompact`) empty card it's icon-only — this becomes the `aria-label` instead of visible text. */
@@ -55,6 +58,7 @@ export function AssetGalleryCard({
   image,
   alt = "",
   date,
+  isMainPortrait = false,
   onUpload,
   emptyLabel = "Upload Your Image",
   onEmptyClick,
@@ -240,6 +244,11 @@ export function AssetGalleryCard({
       ) : null}
       {!isStyleCard && !isRemovable && date ? (
         <span className={styles.dateLabel}>{date}</span>
+      ) : null}
+      {!isStyleCard && !isRemovable && isMainPortrait ? (
+        <Badge variant="default" className={styles.mainBadge}>
+          Main
+        </Badge>
       ) : null}
       {isCompactStyleCard ? null : isRemovable ? (
         <button

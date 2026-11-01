@@ -24,14 +24,20 @@
    borders on edge-flush children (Chatbox, AssetGalleryCard, ...) room
    before hitting this wrapper's own overflow clip, without changing its
    visible footprint inside .root.
-   align-items: stretch (not flex-start) so emptyRow/defaultRow always fill
-   .scrollArea's full height even when the row's natural content is shorter
-   than it (e.g. Post Type = Text, no Image style/Reference rows) — flex
-   stretch only sets a floor, so taller content still overflows and scrolls
-   exactly as before. */
+   align-items: flex-start (not stretch) so emptyRow/defaultRow are always
+   sized by their own tallest column's NATURAL content height, even when
+   that's taller than .scrollArea's own viewport-bounded height (e.g. the
+   `default` preview's tall PostCard image) — align-items: stretch here would
+   instead force the row down to .scrollArea's bounded size, which made BOTH
+   columns (and anything meant to flex-grow inside them, like the chatbox)
+   stop at that same undersized height, even though the taller column's
+   content kept going past it. emptyRow/defaultRow's own `min-height: 100%`
+   below is the floor that keeps short content filling .scrollArea's
+   available space the way align-items: stretch used to, without capping
+   taller content to that same floor. */
 .scrollArea {
   display: flex;
-  align-items: stretch;
+  align-items: flex-start;
   align-self: stretch;
   min-height: 0;
   margin: -4px;
@@ -44,15 +50,25 @@
    divider + defaultRight) as .scrollArea's single child, instead of them
    being direct, individually-stretched children of .scrollArea — so this
    row's own height is driven by its tallest column's NATURAL content
-   height, or .scrollArea's own height when that's taller (see .scrollArea).
-   emptyRight's chatbox (flex: 1 1 auto) grows to fill whatever gap is left,
-   pushing Auto-generate down to stay level with wherever emptyLeft (e.g. a
-   long Reference row) ends, or down to the modal's own floor when emptyLeft
-   is short. */
+   height (see .scrollArea), never capped by .scrollArea's own
+   viewport-bounded height. align-items: stretch then stretches the
+   SHORTER column up to match that natural tallest-column height —
+   emptyRight's chatbox (flex: 1 1 auto) absorbs the gap when emptyLeft
+   (e.g. a long Reference row) or, in defaultRow's case, a tall PostCard
+   preview is the taller side.
+   The min-height: 100% below adds a FLOOR on top of that (see .scrollArea's
+   comment) for when neither column is independently tall: on style="empty"
+   it resolves against .root's 600px min-height, so e.g. a short instruction
+   with postTypeIndex="Text" (no Image style/Reference rows on the left)
+   still fills the modal instead of leaving dead space below Auto-generate.
+   style="default" has no modal-level min-height to resolve against, so this
+   same min-height: 100% is a no-op there — a short text-only post still
+   keeps both columns at their own natural minimum instead of ballooning. */
 .emptyRow {
   display: flex;
   align-items: stretch;
   width: 100%;
+  min-height: 100%;
   gap: var(--gb-spacing-6);
 }
 
@@ -60,6 +76,7 @@
   display: flex;
   align-items: stretch;
   width: 100%;
+  min-height: 100%;
   gap: var(--gb-spacing-5);
 }
 

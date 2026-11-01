@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Chips } from "@/components/ui/chips";
+import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
 import { Icon } from "@/lib/sprite-icon";
@@ -52,6 +53,14 @@ export interface GoalSettingProps {
   showHeader?: boolean;
   /** Figma `Type` on Part/Goal. "default" renders Known for Now/Next as read-only text and disables the settings chips (e.g. the Asset panel). Default "editable" */
   type?: "editable" | "default";
+
+  /** Whether to show the "Self Name" section above Known for Now. Omit as false when the self's name is already shown elsewhere right above this (e.g. the Asset panel's own title). Default true */
+  showSelfName?: boolean;
+  /** Self Name value when used as a controlled component */
+  selfName?: string;
+  /** Initial value when used as an uncontrolled component */
+  defaultSelfName?: string;
+  onSelfNameChange?: (value: string) => void;
 
   /** "Known for Now" value when used as a controlled component */
   now?: string;
@@ -404,6 +413,10 @@ export function GoalSetting({
   className,
   showHeader = true,
   type = "editable",
+  showSelfName = true,
+  selfName,
+  defaultSelfName = "",
+  onSelfNameChange,
   now,
   defaultNow = "",
   onNowChange,
@@ -429,6 +442,14 @@ export function GoalSetting({
   isEmbedded = false,
   colorScheme = "dark",
 }: GoalSettingProps) {
+  const [uncontrolledSelfName, setUncontrolledSelfName] =
+    React.useState(defaultSelfName);
+  const currentSelfName = selfName ?? uncontrolledSelfName;
+  const handleSelfNameChange = (value: string) => {
+    if (selfName === undefined) setUncontrolledSelfName(value);
+    onSelfNameChange?.(value);
+  };
+
   const [uncontrolledNow, setUncontrolledNow] = React.useState(defaultNow);
   const currentNow = now ?? uncontrolledNow;
   const handleNowChange = (value: string) => {
@@ -517,6 +538,24 @@ export function GoalSetting({
       )}
 
       <div className={styles.contentWrap}>
+        {showSelfName && (
+          <div className={styles.section}>
+            <p className={styles.sectionTitle}>Self Name</p>
+            <div className={styles.sectionBody}>
+              {isDefault ? (
+                <p className={styles.readOnlyField}>{currentSelfName}</p>
+              ) : (
+                <Input
+                  aria-label="Self Name"
+                  placeholder="e.g. Entrepreneur"
+                  value={currentSelfName}
+                  onValueChange={handleSelfNameChange}
+                />
+              )}
+            </div>
+          </div>
+        )}
+
         <div className={styles.section}>
           <p className={styles.sectionTitle}>Known for Now</p>
           <div className={styles.sectionBody}>
@@ -602,7 +641,11 @@ export function GoalSetting({
         <Button
           type="button"
           variant="primary"
-          disabled={!currentNow.trim() || !currentGoal.trim()}
+          disabled={
+            (showSelfName && !currentSelfName.trim()) ||
+            !currentNow.trim() ||
+            !currentGoal.trim()
+          }
           onClick={handleSaveClick}
           className={styles.saveButton}
         >

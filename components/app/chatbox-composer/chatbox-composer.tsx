@@ -43,12 +43,14 @@ export type ChatboxComposerProps = ChatboxComposerSharedProps &
     | { variant?: "default" | "image" }
     | {
         variant: "chips";
-        /** Selected chip index when used as a controlled component (0=All/1=Image/2=Text) */
+        /** Selected chip index when used as a controlled component (0=All/1=Image/2=Text, or whatever order `chipLabels` gives) */
         selectedChip?: number;
         /** Initial selected index when used as an uncontrolled component */
         defaultSelectedChip?: number;
         /** Called when the chip selection changes */
         onChipChange?: (index: number) => void;
+        /** Overrides the default ["All","Image","Text"] set — e.g. a consumer with no "All" case */
+        chipLabels?: readonly string[];
       }
   );
 
@@ -58,6 +60,7 @@ type ChatboxComposerInternalProps = ChatboxComposerSharedProps & {
   selectedChip?: number;
   defaultSelectedChip?: number;
   onChipChange?: (index: number) => void;
+  chipLabels?: readonly string[];
 };
 
 export function ChatboxComposer(props: ChatboxComposerProps) {
@@ -70,6 +73,7 @@ export function ChatboxComposer(props: ChatboxComposerProps) {
     selectedChip,
     defaultSelectedChip = 0,
     onChipChange,
+    chipLabels = CHIP_LABELS,
     disabled = false,
     ...chatboxProps
   } = props as ChatboxComposerInternalProps;
@@ -153,7 +157,7 @@ export function ChatboxComposer(props: ChatboxComposerProps) {
 
       {showChips ? (
         <div className={styles.chipRow}>
-          {CHIP_LABELS.map((label, index) => (
+          {chipLabels.map((label, index) => (
             <Chips
               key={label}
               type="button"

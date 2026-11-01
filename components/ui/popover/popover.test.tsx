@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { Popover } from "./popover";
@@ -166,16 +166,14 @@ describe("Popover", () => {
     expect(onCheckedChange).toHaveBeenCalledWith(true);
   });
 
-  it("closes on Escape key press", async () => {
+  it("does not close on Escape key press — only Cancel/Confirm do", async () => {
     const user = userEvent.setup();
     const onOpenChange = vi.fn();
     render(<Popover {...baseProps} open onOpenChange={onOpenChange} />);
 
     await user.keyboard("{Escape}");
 
-    await waitFor(() => {
-      expect(onOpenChange).toHaveBeenCalledWith(false);
-    });
+    expect(onOpenChange).not.toHaveBeenCalled();
   });
 
   it("hides the description row when description is omitted", () => {

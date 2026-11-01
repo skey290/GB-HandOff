@@ -25,13 +25,14 @@ A composite bundling the two kinds of content that go into the `children` slot o
 
 ## Props
 
-| Prop                                                    | Type                              | Default     | Description                                                                                             |
-| ------------------------------------------------------- | --------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------- |
-| `variant`                                               | `"default" \| "image" \| "chips"` | `"default"` | Which content to show in the slot                                                                       |
-| `images` / `defaultImages`                              | `{ src: string; alt?: string }[]` | —           | Controlled / uncontrolled attachment list. When present the thumbnail row shows regardless of `variant` |
-| `onRemoveImage`                                         | `(index: number) => void`         | —           | Called when an image's remove badge is clicked                                                          |
-| `onAttach`                                              | `() => void`                      | —           | Called when the attach button is clicked                                                                |
-| `selectedChip` / `defaultSelectedChip` / `onChipChange` | `number`                          | `0`         | `variant="chips"` only                                                                                  |
+| Prop                                                    | Type                              | Default                  | Description                                                                                                                                  |
+| ------------------------------------------------------- | --------------------------------- | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `variant`                                               | `"default" \| "image" \| "chips"` | `"default"`              | Which content to show in the slot                                                                                                            |
+| `images` / `defaultImages`                              | `{ src: string; alt?: string }[]` | —                        | Controlled / uncontrolled attachment list. When present the thumbnail row shows regardless of `variant`                                      |
+| `onRemoveImage`                                         | `(index: number) => void`         | —                        | Called when an image's remove badge is clicked                                                                                               |
+| `onAttach`                                              | `() => void`                      | —                        | Called when the attach button is clicked                                                                                                     |
+| `selectedChip` / `defaultSelectedChip` / `onChipChange` | `number`                          | `0`                      | `variant="chips"` only                                                                                                                       |
+| `chipLabels`                                            | `readonly string[]`               | `["All","Image","Text"]` | `variant="chips"` only. Overrides the default label set — e.g. `PostingModal`'s edit flow has no "All" case, so it passes `["Image","Text"]` |
 
 Everything else is inherited from `Chatbox` (`value`, `onValueChange`, `disabled`, `onSend`, `showAiButton`, …), except `children`, `onAttachFiles`, `accept`, and `multiple`.
 

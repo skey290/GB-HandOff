@@ -13,6 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Popover } from "@/components/ui/popover";
 import { Select, type SelectOption } from "@/components/ui/select";
 import { Tabs, type TabItem } from "@/components/ui/tabs";
 import {
@@ -122,6 +123,8 @@ export interface AssetGalleryPortraitImage {
   id: string;
   src: string;
   alt: string;
+  /** Shown in the Self Portrait grid's top-left corner (Figma `date` label). Omitted skips the label. */
+  date?: string;
 }
 
 export interface AssetGalleryDialogProps {
@@ -132,8 +135,12 @@ export interface AssetGalleryDialogProps {
   onSelfIdChange: (selfId: string) => void;
   /** Images the user has uploaded/created for this self's portrait. Empty until they add one. */
   portraitImages: AssetGalleryPortraitImage[];
-  /** Called with the chosen style card's image when Generate is clicked after an upload. */
-  onGenerate: (imageSrc: string) => void;
+  /** Called with the chosen style card's image when Generate is clicked after an upload. The
+   * second argument is `true` for the first image of a multi-style batch — the host uses it to
+   * decide which of the newly generated images becomes the self's main portrait. */
+  onGenerate: (imageSrc: string, isFirstOfBatch: boolean) => void;
+  /** Src of this self's current main portrait — shown with a "Main" badge in the Self Portrait grid. */
+  mainPortraitSrc?: string;
   /** Called with the selected reference image(s) when Generate is clicked on the Reference tab. */
   onUseReferenceImages: (imageSrcs: string[]) => void;
   /** Called with a Self Portrait's image when "Set as main Portrait" is chosen from its menu. */
@@ -166,6 +173,16 @@ export interface AssetGalleryDialogProps {
    * to switch to in that context. Default false.
    */
   isPickerMode?: boolean;
+  /**
+   * This session is for a self still being created, not just browsing/editing
+   * an existing one — while its Self Portrait grid is still empty, closing
+   * (by any means) asks to cancel creating the self instead of just closing,
+   * via `onCancelCreating`. Once it has at least one portrait, the self is
+   * considered finished and this dialog closes normally. Default false.
+   */
+  isCreatingSelf?: boolean;
+  /** Called instead of `onOpenChange(false)` when the user confirms canceling self creation (see `isCreatingSelf`) — the host rolls back the in-progress self. */
+  onCancelCreating?: () => void;
 }
 
 /** Asset management modal shared by the Self app (browse/manage a Self's portrait + references) and Content Studio (pick reference images for a post). */
@@ -177,6 +194,7 @@ export function AssetGalleryDialog({
   onSelfIdChange,
   portraitImages,
   onGenerate,
+  mainPortraitSrc,
   onUseReferenceImages,
   onSetMainPortrait,
   onReplacePortrait,
@@ -190,6 +208,8 @@ export function AssetGalleryDialog({
   colorScheme = "dark",
   isPickerMode = false,
   selfLabel,
+  isCreatingSelf = false,
+  onCancelCreating,
 }: AssetGalleryDialogProps) {
   const [deletedImageIds, setDeletedImageIds] = React.useState<Set<string>>(
     () => new Set(),
@@ -238,6 +258,16 @@ export function AssetGalleryDialog({
   >(() => new Set());
   const [selectedTabIndex, setSelectedTabIndex] =
     React.useState(initialTabIndex);
+  // Shown instead of closing outright when the dialog is asked to close (X,
+  // overlay click, Escape) while an uploaded photo + style pick is still
+  // pending — nothing is committed until Create, so closing here would
+  // silently discard it.
+  const [showDiscardConfirm, setShowDiscardConfirm] = React.useState(false);
+  // Shown instead when `isCreatingSelf` and no Self Portrait exists yet — any
+  // close attempt means abandoning the self itself, not just an in-progress
+  // upload, so this takes priority over `showDiscardConfirm` above.
+  const [showCancelCreatingConfirm, setShowCancelCreatingConfirm] =
+    React.useState(false);
 
   React.useEffect(() => {
     if (open) {
@@ -252,7 +282,9 @@ export function AssetGalleryDialog({
     }
   }, [open, selfId, initialTabIndex]);
 
-  const archivedImages = getArchivedImages(selfId).map((src, index) => ({
+  const archivedImages: AssetGalleryPortraitImage[] = getArchivedImages(
+    selfId,
+  ).map((src, index) => ({
     id: `archived-${index}`,
     src,
     alt: "Archived profile image",
@@ -289,7 +321,8 @@ export function AssetGalleryDialog({
       // Editing replaces the one image being edited, so only its first pick applies.
       onReplacePortrait(editingPortraitImageId, selected[0]!.image);
     } else {
-      selected.forEach((style) => onGenerate(style.image));
+      // The first style in the batch becomes the self's main portrait.
+      selected.forEach((style, index) => onGenerate(style.image, index === 0));
     }
     setPendingUploadSrc(null);
     setPendingUploadTarget(null);
@@ -394,239 +427,305 @@ export function AssetGalleryDialog({
     null,
   );
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        ref={setContentNode}
-        className={cn(colorScheme, styles.content)}
-        data-step={isReferenceUploadStep ? "reference-upload" : undefined}
-      >
-        <DialogHeader className={styles.headerSizing}>
-          <div className={styles.headerRow}>
-            <DialogTitle>
-              {isReferenceUploadStep
-                ? "Create My Reference"
-                : pendingUploadSrc
-                  ? "Create Self"
-                  : "Asset Gallery"}
-            </DialogTitle>
-            <div className={styles.forGroup}>
-              <span className={styles.forLabel}>for</span>
-              {isPickerMode || selfLabel ? (
-                <span className={styles.selfLabelStatic}>
-                  {selfLabel ??
-                    selves.find((self) => self.value === selfId)?.label ??
-                    selfId}
-                </span>
-              ) : (
-                <Select
-                  variant="ghost"
-                  options={selves}
-                  value={selfId}
-                  onValueChange={onSelfIdChange}
-                  shouldFitContent
-                  container={contentNode}
-                />
-              )}
-            </div>
-          </div>
-          {isReferenceUploadStep ? (
-            <DialogDescription>
-              Pick a preset below to create your own reference image from the
-              photo you uploaded.
-            </DialogDescription>
-          ) : pendingUploadSrc ? (
-            <DialogDescription>
-              Pick a style below to create your Self Portrait from the photo you
-              uploaded.
-            </DialogDescription>
-          ) : selectedTabIndex === 1 ? (
-            <DialogDescription>
-              {isPickerMode
-                ? "Pick one or more reference images to generate on-brand content in Content Studio, or upload one of your own."
-                : "Browse your reference images, or create your own using a preset."}
-            </DialogDescription>
-          ) : (
-            <DialogDescription>
-              Manage your Self Portrait here. It also includes reference images
-              you can use to create a Self Portrait
-              <br />— create one of your own, upload an image you like, or
-              generate a new one from a reference image.
-            </DialogDescription>
-          )}
-        </DialogHeader>
+  const handleOpenChange = (next: boolean) => {
+    if (!next && isCreatingSelf && yourImages.length === 0) {
+      setShowCancelCreatingConfirm(true);
+      return;
+    }
+    if (
+      !next &&
+      pendingUploadSrc !== null &&
+      pendingUploadTarget === "self-portrait"
+    ) {
+      setShowDiscardConfirm(true);
+      return;
+    }
+    onOpenChange(next);
+  };
 
-        {pendingUploadSrc ? (
-          isReferenceUploadStep ? (
-            <>
-              <div className={styles.referenceUploadLayout}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={pendingUploadSrc}
-                  alt="Uploaded photo"
-                  className={styles.uploadedPhoto}
-                />
-                <span aria-hidden="true" className={styles.plusDivider}>
-                  <Icon id="plus-icon" className={styles.plusDividerIcon} />
-                </span>
-                <div className={styles.referencePresetGrid}>
-                  {PRESETS.map((preset) => (
-                    <AssetGalleryCard
-                      key={preset.id}
-                      image={preset.src}
-                      alt={preset.alt}
-                      isSelected={selectedCreatePresetIds.has(preset.id)}
-                      onSelectedChange={(selected) =>
-                        setSelectedCreatePresetIds((prev) => {
-                          const next = new Set(prev);
-                          if (selected) next.add(preset.id);
-                          else next.delete(preset.id);
-                          return next;
-                        })
-                      }
-                      className={styles.fillWidth}
-                    />
-                  ))}
-                </div>
+  return (
+    <>
+      <Dialog open={open} onOpenChange={handleOpenChange}>
+        <DialogContent
+          ref={setContentNode}
+          className={cn(colorScheme, styles.content)}
+          data-step={isReferenceUploadStep ? "reference-upload" : undefined}
+        >
+          <DialogHeader className={styles.headerSizing}>
+            <div className={styles.headerRow}>
+              <DialogTitle>
+                {isReferenceUploadStep
+                  ? "Create My Reference"
+                  : pendingUploadSrc
+                    ? "Create Self"
+                    : "Asset Gallery"}
+              </DialogTitle>
+              <div className={styles.forGroup}>
+                <span className={styles.forLabel}>for</span>
+                {isPickerMode || selfLabel ? (
+                  <span className={styles.selfLabelStatic}>
+                    {selfLabel ??
+                      selves.find((self) => self.value === selfId)?.label ??
+                      selfId}
+                  </span>
+                ) : (
+                  <Select
+                    variant="ghost"
+                    options={selves}
+                    value={selfId}
+                    onValueChange={onSelfIdChange}
+                    shouldFitContent
+                    container={contentNode}
+                  />
+                )}
               </div>
-              <div className={styles.stepFooter}>
-                <Button
-                  variant="icon-ghost"
-                  aria-label="Back"
-                  icon={<Icon id="arrow-left-icon" className={styles.icon16} />}
-                  onClick={handleCancelReferenceUpload}
-                />
-                <Button
-                  variant="primary"
-                  disabled={selectedCreatePresetIds.size === 0}
-                  onClick={handleGenerate}
-                >
-                  Create my reference
-                </Button>
-              </div>
-            </>
-          ) : (
-            <div className={styles.selfPortraitCreateLayout}>
-              <div className={styles.selfPortraitCreateRow}>
-                <div
-                  role={editingPortraitImageId ? "radiogroup" : undefined}
-                  className={styles.styleCardGrid}
-                >
-                  {STYLE_CARDS.map((style) => (
-                    <AssetGalleryCard
-                      key={style.id}
-                      image={style.image}
-                      alt={style.title}
-                      title={style.title}
-                      isCompact
-                      // Editing replaces one existing image, so only one
-                      // style can apply — picking a style here swaps the
-                      // selection instead of adding to it.
-                      selectionRole={
-                        editingPortraitImageId ? "radio" : "checkbox"
-                      }
-                      className={styles.compactStyleCard}
-                      isSelected={selectedStyleIds.has(style.id)}
-                      onSelectedChange={(selected) =>
-                        setSelectedStyleIds((prev) => {
-                          if (editingPortraitImageId) {
-                            return selected ? new Set([style.id]) : new Set();
-                          }
-                          const next = new Set(prev);
-                          if (selected) next.add(style.id);
-                          else next.delete(style.id);
-                          return next;
-                        })
-                      }
-                    />
-                  ))}
-                </div>
-                <span
-                  aria-hidden="true"
-                  className={cn(
-                    styles.plusDivider,
-                    styles.plusDividerGridCentered,
-                  )}
-                >
-                  <Icon id="plus-icon" className={styles.plusDividerIcon} />
-                </span>
-                <div className={styles.uploadedImageColumn}>
+            </div>
+            {isReferenceUploadStep ? (
+              <DialogDescription>
+                Pick a preset below to create your own reference image from the
+                photo you uploaded.
+              </DialogDescription>
+            ) : pendingUploadSrc ? (
+              <DialogDescription>
+                Pick a style below to create your Self Portrait from the photo
+                you uploaded.
+              </DialogDescription>
+            ) : selectedTabIndex === 1 ? (
+              <DialogDescription>
+                {isPickerMode
+                  ? "Pick one or more reference images to generate on-brand content in Content Studio, or upload one of your own."
+                  : "Browse your reference images, or create your own using a preset."}
+              </DialogDescription>
+            ) : (
+              <DialogDescription>
+                Manage your Self Portrait here. It also includes reference
+                images you can use to create a Self Portrait
+                <br />— create one of your own, upload an image you like, or
+                generate a new one from a reference image.
+              </DialogDescription>
+            )}
+          </DialogHeader>
+
+          {pendingUploadSrc ? (
+            isReferenceUploadStep ? (
+              <>
+                <div className={styles.referenceUploadLayout}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={pendingUploadSrc}
                     alt="Uploaded photo"
                     className={styles.uploadedPhoto}
                   />
-                  <p className={styles.uploadedImageCaption}>Uploaded image</p>
-                  <div className={styles.uploadedImageActions}>
-                    <Button
-                      variant="icon-ghost"
-                      aria-label="Back"
-                      icon={
-                        <Icon id="arrow-left-icon" className={styles.icon16} />
-                      }
-                      onClick={handleCancelSelfPortraitUpload}
+                  <span aria-hidden="true" className={styles.plusDivider}>
+                    <Icon id="plus-icon" className={styles.plusDividerIcon} />
+                  </span>
+                  <div className={styles.referencePresetGrid}>
+                    {PRESETS.map((preset) => (
+                      <AssetGalleryCard
+                        key={preset.id}
+                        image={preset.src}
+                        alt={preset.alt}
+                        isSelected={selectedCreatePresetIds.has(preset.id)}
+                        onSelectedChange={(selected) =>
+                          setSelectedCreatePresetIds((prev) => {
+                            const next = new Set(prev);
+                            if (selected) next.add(preset.id);
+                            else next.delete(preset.id);
+                            return next;
+                          })
+                        }
+                        className={styles.fillWidth}
+                      />
+                    ))}
+                  </div>
+                </div>
+                <div className={styles.stepFooter}>
+                  <Button
+                    variant="icon-ghost"
+                    aria-label="Back"
+                    icon={
+                      <Icon id="arrow-left-icon" className={styles.icon16} />
+                    }
+                    onClick={handleCancelReferenceUpload}
+                  />
+                  <Button
+                    variant="primary"
+                    disabled={selectedCreatePresetIds.size === 0}
+                    onClick={handleGenerate}
+                  >
+                    Create my reference
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <div className={styles.selfPortraitCreateLayout}>
+                <div className={styles.selfPortraitCreateRow}>
+                  <div
+                    role={editingPortraitImageId ? "radiogroup" : undefined}
+                    className={styles.styleCardGrid}
+                  >
+                    {STYLE_CARDS.map((style) => (
+                      <AssetGalleryCard
+                        key={style.id}
+                        image={style.image}
+                        alt={style.title}
+                        title={style.title}
+                        isCompact
+                        // Editing replaces one existing image, so only one
+                        // style can apply — picking a style here swaps the
+                        // selection instead of adding to it.
+                        selectionRole={
+                          editingPortraitImageId ? "radio" : "checkbox"
+                        }
+                        className={styles.compactStyleCard}
+                        isSelected={selectedStyleIds.has(style.id)}
+                        onSelectedChange={(selected) =>
+                          setSelectedStyleIds((prev) => {
+                            if (editingPortraitImageId) {
+                              return selected ? new Set([style.id]) : new Set();
+                            }
+                            const next = new Set(prev);
+                            if (selected) next.add(style.id);
+                            else next.delete(style.id);
+                            return next;
+                          })
+                        }
+                      />
+                    ))}
+                  </div>
+                  <span
+                    aria-hidden="true"
+                    className={cn(
+                      styles.plusDivider,
+                      styles.plusDividerGridCentered,
+                    )}
+                  >
+                    <Icon id="plus-icon" className={styles.plusDividerIcon} />
+                  </span>
+                  <div className={styles.uploadedImageColumn}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={pendingUploadSrc}
+                      alt="Uploaded photo"
+                      className={styles.uploadedPhoto}
                     />
-                    <Button
-                      variant="primary"
-                      disabled={selectedStyleIds.size === 0}
-                      onClick={handleGenerate}
-                      className={styles.createButton}
-                    >
-                      Create
-                    </Button>
+                    <p className={styles.uploadedImageCaption}>
+                      Uploaded image
+                    </p>
+                    <div className={styles.uploadedImageActions}>
+                      <Button
+                        variant="icon-ghost"
+                        aria-label="Back"
+                        icon={
+                          <Icon
+                            id="arrow-left-icon"
+                            className={styles.icon16}
+                          />
+                        }
+                        onClick={handleCancelSelfPortraitUpload}
+                      />
+                      <Button
+                        variant="primary"
+                        disabled={selectedStyleIds.size === 0}
+                        onClick={handleGenerate}
+                        className={styles.createButton}
+                      >
+                        Create
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          )
-        ) : (
-          <>
-            <Tabs
-              items={tabItems}
-              selectedIndex={selectedTabIndex}
-              onSelectedIndexChange={setSelectedTabIndex}
-            />
+            )
+          ) : (
+            <>
+              <Tabs
+                items={tabItems}
+                selectedIndex={selectedTabIndex}
+                onSelectedIndexChange={setSelectedTabIndex}
+              />
 
-            <div className={styles.tabPanel}>
-              {selectedTabIndex === 0 ? (
-                <div className={styles.section}>
-                  <span className={styles.sectionLabel}>Self Portrait</span>
-                  <div className={styles.cardGrid}>
-                    {yourImages.map((image) => (
-                      <div key={image.id} className={styles.cardSlot}>
-                        <AssetGalleryCard
-                          image={image.src}
-                          alt={image.alt}
-                          menuOptions={CARD_MENU_OPTIONS}
-                          onSelectMenuOption={(value) =>
-                            handleSelectMenuOption(value, image.id)
-                          }
-                          menuContainer={contentNode}
-                        />
-                        {deleteBlockedImageId === image.id && (
-                          <div
-                            key={deleteBlockedKey}
-                            className={styles.deleteBlockedBubble}
-                          >
-                            <p className={styles.deleteBlockedText}>
-                              Keep at least one Self Portrait
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                    <AssetGalleryCard onUpload={handleEmptyCardUpload} />
-                  </div>
-                </div>
-              ) : (
-                <div className={styles.referenceSections}>
+              <div className={styles.tabPanel}>
+                {selectedTabIndex === 0 ? (
                   <div className={styles.section}>
-                    <span className={styles.sectionLabel}>My Reference</span>
+                    <span className={styles.sectionLabel}>Self Portrait</span>
                     <div className={styles.cardGrid}>
-                      {myReferenceImages.map((image) => (
+                      {yourImages.map((image) => (
                         <div key={image.id} className={styles.cardSlot}>
                           <AssetGalleryCard
+                            image={image.src}
+                            alt={image.alt}
+                            date={image.date}
+                            menuOptions={CARD_MENU_OPTIONS}
+                            onSelectMenuOption={(value) =>
+                              handleSelectMenuOption(value, image.id)
+                            }
+                            menuContainer={contentNode}
+                            isMainPortrait={image.src === mainPortraitSrc}
+                          />
+                          {deleteBlockedImageId === image.id && (
+                            <div
+                              key={deleteBlockedKey}
+                              className={styles.deleteBlockedBubble}
+                            >
+                              <p className={styles.deleteBlockedText}>
+                                Keep at least one Self Portrait
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                      <AssetGalleryCard onUpload={handleEmptyCardUpload} />
+                    </div>
+                  </div>
+                ) : (
+                  <div className={styles.referenceSections}>
+                    <div className={styles.section}>
+                      <span className={styles.sectionLabel}>My Reference</span>
+                      <div className={styles.cardGrid}>
+                        {myReferenceImages.map((image) => (
+                          <div key={image.id} className={styles.cardSlot}>
+                            <AssetGalleryCard
+                              image={image.src}
+                              alt={image.alt}
+                              isSelected={
+                                isPickerMode
+                                  ? selectedPresetIds.has(image.id)
+                                  : undefined
+                              }
+                              onSelectedChange={
+                                isPickerMode
+                                  ? (selected) =>
+                                      toggleSelectedPresetId(image.id, selected)
+                                  : undefined
+                              }
+                            />
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                onDeleteReferenceImage(image.id);
+                              }}
+                              aria-label="Delete reference image"
+                              data-picker-mode={isPickerMode || undefined}
+                              className={styles.referenceDeleteButton}
+                            >
+                              <X
+                                aria-hidden="true"
+                                className={styles.referenceDeleteIcon}
+                              />
+                            </button>
+                          </div>
+                        ))}
+                        <AssetGalleryCard onUpload={handleReferenceUpload} />
+                      </div>
+                    </div>
+                    <div className={styles.section}>
+                      <span className={styles.sectionLabel}>Presets</span>
+                      <div className={styles.cardGrid}>
+                        {PRESETS.map((image) => (
+                          <AssetGalleryCard
+                            key={image.id}
                             image={image.src}
                             alt={image.alt}
                             isSelected={
@@ -641,69 +740,61 @@ export function AssetGalleryDialog({
                                 : undefined
                             }
                           />
-                          <button
-                            type="button"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              onDeleteReferenceImage(image.id);
-                            }}
-                            aria-label="Delete reference image"
-                            data-picker-mode={isPickerMode || undefined}
-                            className={styles.referenceDeleteButton}
-                          >
-                            <X
-                              aria-hidden="true"
-                              className={styles.referenceDeleteIcon}
-                            />
-                          </button>
-                        </div>
-                      ))}
-                      <AssetGalleryCard onUpload={handleReferenceUpload} />
+                        ))}
+                      </div>
                     </div>
                   </div>
-                  <div className={styles.section}>
-                    <span className={styles.sectionLabel}>Presets</span>
-                    <div className={styles.cardGrid}>
-                      {PRESETS.map((image) => (
-                        <AssetGalleryCard
-                          key={image.id}
-                          image={image.src}
-                          alt={image.alt}
-                          isSelected={
-                            isPickerMode
-                              ? selectedPresetIds.has(image.id)
-                              : undefined
-                          }
-                          onSelectedChange={
-                            isPickerMode
-                              ? (selected) =>
-                                  toggleSelectedPresetId(image.id, selected)
-                              : undefined
-                          }
-                        />
-                      ))}
-                    </div>
-                  </div>
+                )}
+              </div>
+
+              {isPickerMode && selectedTabIndex === 1 && (
+                <div className={styles.selectFooter}>
+                  <Button
+                    variant="primary"
+                    disabled={selectedPresetIds.size === 0}
+                    onClick={handleSelectReferences}
+                  >
+                    {selectedPresetIds.size > 0
+                      ? `Select (${selectedPresetIds.size})`
+                      : "Select"}
+                  </Button>
                 </div>
               )}
-            </div>
-
-            {isPickerMode && selectedTabIndex === 1 && (
-              <div className={styles.selectFooter}>
-                <Button
-                  variant="primary"
-                  disabled={selectedPresetIds.size === 0}
-                  onClick={handleSelectReferences}
-                >
-                  {selectedPresetIds.size > 0
-                    ? `Select (${selectedPresetIds.size})`
-                    : "Select"}
-                </Button>
-              </div>
-            )}
-          </>
-        )}
-      </DialogContent>
-    </Dialog>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+      <Popover
+        type="warning"
+        open={showDiscardConfirm}
+        onOpenChange={setShowDiscardConfirm}
+        title="Discard this Self Portrait?"
+        description="Your uploaded photo and style selection won't be saved if you leave now."
+        leadingIcon={<Icon id="triangle-alert-icon" />}
+        cancelLabel="Keep editing"
+        confirmLabel="Discard"
+        onCancel={() => setShowDiscardConfirm(false)}
+        onConfirm={() => {
+          setShowDiscardConfirm(false);
+          handleCancelSelfPortraitUpload();
+          onOpenChange(false);
+        }}
+      />
+      <Popover
+        type="warning"
+        open={showCancelCreatingConfirm}
+        onOpenChange={setShowCancelCreatingConfirm}
+        title="Cancel creating this self?"
+        description="This self and anything you've added for it won't be saved."
+        leadingIcon={<Icon id="triangle-alert-icon" />}
+        cancelLabel="Keep editing"
+        confirmLabel="Cancel creating"
+        onCancel={() => setShowCancelCreatingConfirm(false)}
+        onConfirm={() => {
+          setShowCancelCreatingConfirm(false);
+          onCancelCreating?.();
+        }}
+      />
+    </>
   );
 }

@@ -149,6 +149,7 @@ export function AssetPanel({
         shouldFitContainer
         isEmbedded
         type="default"
+        showSelfName={false}
         now={self.knownForNow}
         goal={self.knownForNext}
         goalActions={self.goalActions}

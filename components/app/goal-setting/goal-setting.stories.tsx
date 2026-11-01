@@ -14,8 +14,9 @@ const FIGMA_URL =
 
 /** Mirrors Figma's two named instances (`Type=empty` / `Type=default`) */
 const PRESETS = {
-  empty: { defaultNow: "", defaultGoal: "" },
+  empty: { defaultSelfName: "", defaultNow: "", defaultGoal: "" },
   default: {
+    defaultSelfName: "Data Scientist",
     defaultNow:
       "I'm known for financial modeling and data analysis in early-stage startups.",
     defaultGoal:
@@ -63,7 +64,7 @@ const meta = {
     docs: {
       description: {
         component:
-          'Implemented as GoalSetting in components/app/goal-setting/goal-setting.tsx. "My goal" card with a Known-for-Now / Known-for-Next pair, each an always-open Textarea (no per-section edit toggle), plus a collapsible "Gabrielle suggests N actions" accordion per section. Known for Next additionally carries a settings sentence whose Frequency/Followers/Timeframe chips expand an inline panel (stepper+toggle / slider / toggle list). A single Save button at the bottom of the card commits the whole card. See docs/components/goal-setting.md.',
+          'Implemented as GoalSetting in components/app/goal-setting/goal-setting.tsx. "My goal" card with a Self Name section above a Known-for-Now / Known-for-Next pair, each an always-open Input/Textarea (no per-section edit toggle), plus a collapsible "Gabrielle suggests N actions" accordion per section. Known for Next additionally carries a settings sentence whose Frequency/Followers/Timeframe chips expand an inline panel (stepper+toggle / slider / toggle list). A single Save button at the bottom of the card commits the whole card — disabled until Self Name (when shown), Known for Now, and Known for Next are all filled. See docs/components/goal-setting.md.',
       },
     },
   },
@@ -80,6 +81,12 @@ const meta = {
       description:
         'Figma `Type` on Part/Goal — "default" renders Known for Now/Next as read-only text and disables the settings chips (used by the Asset panel)',
     },
+    showSelfName: {
+      control: "boolean",
+      description:
+        "Hides the Self Name section entirely — set false when the self's name is already shown elsewhere right above this (e.g. the Asset panel's own title)",
+    },
+    defaultSelfName: { table: { disable: true } },
     defaultNow: { table: { disable: true } },
     defaultGoal: { table: { disable: true } },
     defaultPostingFrequency: {
@@ -98,12 +105,14 @@ const meta = {
   args: {
     preset: "default",
     type: "editable",
+    showSelfName: true,
     defaultPostingCount: 3,
     defaultPostingFrequency: "Day",
     defaultTargetedFollowersIndex: 1,
     defaultTimeframe: "1 year",
     goalActions: GOAL_ACTIONS,
     onClose: fn(),
+    onSelfNameChange: fn(),
     onNowChange: fn(),
     onGoalChange: fn(),
     onPostingCountChange: fn(),

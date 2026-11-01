@@ -358,6 +358,16 @@ describe("PostingModal", () => {
       expect(onApplyChanges).toHaveBeenCalledTimes(1);
     });
 
+    it("offers only Image/Text post-type chips (no All — there's already a post to retype, not generate from scratch)", () => {
+      renderDefault();
+
+      expect(screen.getByRole("button", { name: "Image" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Text" })).toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: "All" }),
+      ).not.toBeInTheDocument();
+    });
+
     it("calls the footer handlers (the preview's own PostCard actions are hidden via showButtons={false})", async () => {
       const user = userEvent.setup();
       const { onSaveChanges, onScheduleDraft, onArchive } = renderDefault();
@@ -381,6 +391,34 @@ describe("PostingModal", () => {
       expect(
         screen.getAllByRole("button", { name: "Schedule Draft" }),
       ).toHaveLength(1);
+    });
+
+    it("keeps Archive after scheduling but hides Schedule Draft (already scheduled)", () => {
+      renderDefault({ ...BASE_POST, status: "scheduled" });
+
+      expect(
+        screen.getByRole("button", { name: "Move to Archive" }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: "Save Changes" }),
+      ).toBeEnabled();
+      expect(
+        screen.queryByRole("button", { name: "Schedule Draft" }),
+      ).not.toBeInTheDocument();
+    });
+
+    it("hides both Archive and Schedule Draft, and disables Save Changes, once posted", () => {
+      renderDefault({ ...BASE_POST, status: "posted" });
+
+      expect(
+        screen.queryByRole("button", { name: "Move to Archive" }),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: "Schedule Draft" }),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: "Save Changes" }),
+      ).toBeDisabled();
     });
 
     it("calls onClose when the close button is clicked", async () => {
@@ -410,14 +448,14 @@ describe("PostingModal", () => {
         ).toBeInTheDocument();
       });
 
-      it("shows the Image style section for a text-only post when Post Type is All (the default)", () => {
+      it("shows the Image style section for a text-only post when Post Type is Image (the default)", () => {
         renderDefault({ ...BASE_POST, contentType: "text", images: [] });
 
         expect(screen.getByText("Image style")).toBeInTheDocument();
       });
 
       it("hides the Image style section when Post Type is Text", () => {
-        renderDefault(BASE_POST, { postTypeIndex: 2 });
+        renderDefault(BASE_POST, { postTypeIndex: 1 });
 
         expect(screen.queryByText("Image style")).not.toBeInTheDocument();
       });
@@ -470,14 +508,14 @@ describe("PostingModal", () => {
     });
 
     describe("Reference row", () => {
-      it("shows the Reference section for a text-only post when Post Type is All (the default)", () => {
+      it("shows the Reference section for a text-only post when Post Type is Image (the default)", () => {
         renderDefault({ ...BASE_POST, contentType: "text", images: [] });
 
         expect(screen.getByText("Reference")).toBeInTheDocument();
       });
 
       it("hides the Reference section when Post Type is Text", () => {
-        renderDefault(BASE_POST, { postTypeIndex: 2 });
+        renderDefault(BASE_POST, { postTypeIndex: 1 });
 
         expect(screen.queryByText("Reference")).not.toBeInTheDocument();
       });

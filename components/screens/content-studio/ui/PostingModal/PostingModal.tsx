@@ -31,6 +31,9 @@ export type { ImageStyleOption };
 export { IMAGE_STYLE_OPTIONS };
 
 const POST_TYPE_LABELS = ["All", "Image", "Text"] as const;
+// Editing an existing post has no "All" (mix image+text from scratch) case —
+// only Image/Text, switching the post's own contentType between the two.
+const EDIT_POST_TYPE_LABELS = ["Image", "Text"] as const;
 
 const ALL_PLATFORMS: PostPlatform[] = ["linkedin", "x", "instagram", "threads"];
 
@@ -115,7 +118,7 @@ export interface PostingModalDefaultProps extends PostingModalSharedProps {
   /** AI rewrite instruction text in the Chatbox */
   rewriteInstruction?: string;
   onRewriteInstructionChange?: (value: string) => void;
-  /** AI rewrite Chatbox's "All/Image/Text" chip (0=All/1=Image/2=Text) when used as a controlled component. Picking "Text" hides the Image style/Reference rows, same as `Style=empty`'s Post Type chips */
+  /** AI rewrite Chatbox's "Image/Text" chip (0=Image/1=Text) when used as a controlled component — no "All", unlike `Style=empty`'s Post Type chips. Picking "Text" hides the Image style/Reference rows */
   postTypeIndex?: number;
   /** Initial chip index when used as an uncontrolled component */
   defaultPostTypeIndex?: number;
@@ -582,8 +585,8 @@ function PostingModalDefault({
     onPostTypeChange?.(index);
   };
 
-  // Post Type = "All" (0) or "Image" (1) — "Text" (2) has no image to style/reference.
-  const showImageAndReference = currentPostTypeIndex !== 2;
+  // Post Type = "Image" (0) — "Text" (1) has no image to style/reference.
+  const showImageAndReference = currentPostTypeIndex !== 1;
 
   return (
     <div
@@ -612,6 +615,7 @@ function PostingModalDefault({
                 disabled={isReadOnly}
                 onValueChange={onDateChange}
                 shouldForceDark={false}
+                container={rootNode}
                 className={styles.dateSelect}
               />
               <InputTime
@@ -647,6 +651,7 @@ function PostingModalDefault({
               <>
                 <ChatboxComposer
                   variant="chips"
+                  chipLabels={EDIT_POST_TYPE_LABELS}
                   selectedChip={currentPostTypeIndex}
                   onChipChange={handlePostTypeChange}
                   value={rewriteInstruction}
@@ -694,7 +699,7 @@ function PostingModalDefault({
             />
 
             <div className={styles.footer}>
-              {isDraftStatus && (
+              {!isReadOnly && (
                 <Button
                   variant="icon"
                   icon={<Icon id="archive-icon" />}

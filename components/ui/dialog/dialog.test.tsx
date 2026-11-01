@@ -81,16 +81,14 @@ describe("Dialog", () => {
     });
   });
 
-  it("closes on Escape key press", async () => {
+  it("does not close on Escape key press — only its own close control does", async () => {
     const user = userEvent.setup();
     renderDialog();
 
     await user.click(screen.getByRole("button", { name: "Open" }));
     await user.keyboard("{Escape}");
 
-    await waitFor(() => {
-      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-    });
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
 
   it("hides the built-in close button when showCloseButton is false", async () => {

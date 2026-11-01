@@ -75,7 +75,12 @@ describe("GoalSetting", () => {
     const user = userEvent.setup();
     const onSave = vi.fn();
     render(
-      <GoalSetting defaultNow="now" defaultGoal="Goal text" onSave={onSave} />,
+      <GoalSetting
+        defaultSelfName="Entrepreneur"
+        defaultNow="now"
+        defaultGoal="Goal text"
+        onSave={onSave}
+      />,
     );
 
     const saveButtons = screen.getAllByRole("button", { name: "Save" });
@@ -91,11 +96,15 @@ describe("GoalSetting", () => {
     render(<GoalSetting onSave={onSave} />);
 
     const saveButton = screen.getByRole("button", { name: "Save" });
+    const selfNameInput = screen.getByRole("textbox", { name: "Self Name" });
     const nowTextarea = screen.getByRole("textbox", { name: "Known for Now" });
     const goalTextarea = screen.getByRole("textbox", {
       name: "Known for Next",
     });
 
+    expect(saveButton).toBeDisabled();
+
+    await user.type(selfNameInput, "Entrepreneur");
     expect(saveButton).toBeDisabled();
 
     await user.type(nowTextarea, "Now value");

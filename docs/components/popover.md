@@ -120,7 +120,7 @@ The description color and the Cancel/Confirm button colors do not differ between
 - **Open/close** — fully controlled; it renders only when `open` is true, and the trigger lives outside the component.
 - **Cancel** — `AlertDialogPrimitive.Cancel` closes the dialog automatically and then calls `onCancel`.
 - **Confirm** — `AlertDialogPrimitive.Action` behaves the same way and then calls `onConfirm`.
-- **Escape** closes it through the Radix default, firing `onOpenChange(false)`.
+- **Escape does not close it** — `onEscapeKeyDown` calls `preventDefault()`, so only Cancel/Confirm can dismiss it (global "modals close only via an explicit control" policy, same as `components/ui/dialog`).
 - **Checkbox row condition** — rendered only when `type === "notification" && checkbox !== undefined`. Passing `checkbox={false}` explicitly renders the row unchecked; omitting the prop hides it entirely. The design distinguishes "the value is false" from "do not show the row".
 - **No collision or positioning logic** — unlike Tooltip, it is pinned to the center, so there is no viewport-collision concept at all.
 

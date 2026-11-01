@@ -95,7 +95,7 @@ describe("ScheduleSettingsPanel", () => {
       expect.objectContaining({
         daily: [
           { time: "11:00", period: "AM" },
-          { time: undefined, period: "AM" },
+          { time: "11:00", period: "AM" },
         ],
       }),
     );
@@ -111,7 +111,7 @@ describe("ScheduleSettingsPanel", () => {
     );
   });
 
-  it("defaults a newly-added row's period to the previous row's, leaving its time as a placeholder", async () => {
+  it("defaults a newly-added row's time and period to the previous row's", async () => {
     const user = userEvent.setup();
     const onTimeSlotsByTypeChange = vi.fn();
     render(
@@ -134,7 +134,7 @@ describe("ScheduleSettingsPanel", () => {
       expect.objectContaining({
         daily: [
           { time: "06:30", period: "PM" },
-          { time: undefined, period: "PM" },
+          { time: "06:30", period: "PM" },
         ],
       }),
     );
@@ -179,7 +179,29 @@ describe("ScheduleSettingsPanel", () => {
     ).toBeInTheDocument();
   });
 
-  it("disables Save when a newly added time slot is left unfilled", async () => {
+  it("disables Save while any time slot is unfilled (resizing the stepper no longer leaves one empty)", async () => {
+    const user = userEvent.setup();
+    render(
+      <ScheduleSettingsPanel
+        defaultTimeSlotsByType={{
+          daily: [{ time: "10:00", period: "AM" }, {}],
+          weekly: [{}],
+          monthly: [{}],
+          custom: [{}],
+        }}
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: "Save" })).toBeDisabled();
+
+    await user.type(
+      screen.getByLabelText("When would you like to post? (slot 2)"),
+      "0100",
+    );
+    expect(screen.getByRole("button", { name: "Save" })).toBeEnabled();
+  });
+
+  it("auto-fills a newly-added time slot instead of leaving it empty, so Save stays enabled", async () => {
     const user = userEvent.setup();
     render(<ScheduleSettingsPanel />);
 
@@ -187,12 +209,6 @@ describe("ScheduleSettingsPanel", () => {
 
     await user.click(
       screen.getByRole("button", { name: "Increase occurrences per day" }),
-    );
-    expect(screen.getByRole("button", { name: "Save" })).toBeDisabled();
-
-    await user.type(
-      screen.getByLabelText("When would you like to post? (slot 2)"),
-      "0100",
     );
     expect(screen.getByRole("button", { name: "Save" })).toBeEnabled();
   });

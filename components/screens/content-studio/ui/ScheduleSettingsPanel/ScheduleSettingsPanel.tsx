@@ -225,11 +225,13 @@ export type ScheduleTimeSlotsByRepeatType = Record<
 >;
 
 /** Resizes a time-slot list to `nextCount` rows, keeping each existing row's
- * `time`/`period` by index and carrying the previous row's `period` forward
- * onto new rows (so the AM/PM toggle never starts in an unset state). Shared
- * with `app/review/content-studio/page.tsx` so Content Goal's Posting
- * frequency and this panel's "On Each Day" stay in sync using the same
- * resize rule. */
+ * `time`/`period` by index. New rows beyond the existing count are filled in
+ * (not left empty) — `time` carries the previous row's `time` forward (or
+ * "11:00" for the very first row), and `period` does the same, so growing
+ * the count via the stepper never produces a row the user has to type into
+ * before it's valid. Shared with `app/review/content-studio/page.tsx` so
+ * Content Goal's Posting frequency and this panel's "On Each Day" stay in
+ * sync using the same resize rule. */
 export function resizeScheduleTimeSlots(
   current: ScheduleTimeSlotValue[],
   nextCount: number,
@@ -239,7 +241,8 @@ export function resizeScheduleTimeSlots(
   for (let i = 0; i < count; i++) {
     const existing = current[i];
     const period: TimePeriod = existing?.period ?? next[i - 1]?.period ?? "AM";
-    next.push({ time: existing?.time, period });
+    const time = existing?.time ?? next[i - 1]?.time ?? "11:00";
+    next.push({ time, period });
   }
   return next;
 }
@@ -390,8 +393,9 @@ export function ScheduleSettingsPanel({
   // Repeat 탭마다 실제로 입력해야 하는 값이 비어있으면 Save를 막는다 —
   // Weekly는 요일 하나도 안 고르면, Monthly는 날짜를 안 쓰면, Custom은
   // 간격 숫자를 안 쓰면 저장할 스케줄이 없는 것과 같다. "On Each Day"는
-  // 스테퍼로 늘어난 줄의 시간이 아직 "11:00" placeholder 그대로(= 사용자가
-  // 입력하지 않음)면 그 값 그대로 저장되지 않도록 막는다.
+  // 스테퍼로 늘어난 줄도 `resizeScheduleTimeSlots`가 실제 값을 채워주지만,
+  // 사용자가 직접 시간을 지워 빈칸으로 만든 경우까지 그대로 저장되지 않도록
+  // 막는다.
   const hasUnfilledTimeSlot = currentTimeSlots.some((slot) => !slot.time);
   const isSaveDisabled =
     hasUnfilledTimeSlot ||

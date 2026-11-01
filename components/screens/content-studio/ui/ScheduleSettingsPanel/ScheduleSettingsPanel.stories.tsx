@@ -71,10 +71,9 @@ export const Playground: Story = {
 
     // The stepper's count drives the time-slot rows below it directly, kept
     // per Repeat tab (Weekly's own list here, independent of Daily's). A
-    // newly-added row's time stays an "11:00" placeholder, but its AM/PM
-    // defaults to the row above's — the toggle has no valid "unset" state —
-    // so stepping up from the 3-slot default adds a 4th row the user only
-    // needs to type a time into.
+    // newly-added row's time and AM/PM both default to the row above's —
+    // stepping up from the 3-slot default adds a 4th row that's already a
+    // valid, editable value, not an empty one the user has to fill in first.
     await userEvent.click(
       canvas.getByRole("button", { name: "Increase occurrences per day" }),
     );
@@ -84,7 +83,7 @@ export const Playground: Story = {
           { time: "10:00", period: "AM" },
           { time: "02:25", period: "PM" },
           { time: "09:00", period: "PM" },
-          { time: undefined, period: "PM" },
+          { time: "09:00", period: "PM" },
         ],
       }),
     );

@@ -36,6 +36,10 @@ export const DialogContent = React.forwardRef<
       <DialogPrimitive.Content
         ref={ref}
         className={cn(styles.content, className)}
+        // Every dialog closes only via an explicit action (its close button,
+        // or a Cancel/Save inside) — an outside click or Escape never dismisses it.
+        onPointerDownOutside={(event) => event.preventDefault()}
+        onEscapeKeyDown={(event) => event.preventDefault()}
         {...props}
       >
         {children}

@@ -217,6 +217,13 @@
   mix-blend-mode: difference;
 }
 
+.mainBadge {
+  position: absolute;
+  bottom: var(--gb-spacing-2-5);
+  left: var(--gb-spacing-2-5);
+  z-index: 2;
+}
+
 .menuTrigger {
   --select-trigger-size: 20px;
   position: absolute;

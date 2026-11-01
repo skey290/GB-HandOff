@@ -78,6 +78,9 @@ export function Popover({
           <AlertDialogPrimitive.Overlay className={styles.overlay} />
           <AlertDialogPrimitive.Content
             className={styles.content}
+            // Cancel/Confirm are the only way out — Escape doesn't silently
+            // dismiss a confirmation the user needs to explicitly decide on.
+            onEscapeKeyDown={(event) => event.preventDefault()}
             style={
               width !== undefined
                 ? ({ "--popover-width": `${width}px` } as React.CSSProperties)

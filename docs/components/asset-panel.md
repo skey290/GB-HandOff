@@ -40,7 +40,7 @@ Four files per the project component rule: `asset-panel.tsx` / `asset-panel.stor
     <button absolute>              "..." trigger, overlaid top-right (not in flow)
       <Popover.Content>            210px menu — Edit Self Portrait / Go to Asset Gallery / Edit Goal
   <Divider />
-  <GoalSetting showHeader={false} showSaveButton={false} />
+  <GoalSetting showHeader={false} showSaveButton={false} showSelfName={false} />
   <Button variant="primary">       "Create contents"
 ```
 
@@ -85,7 +85,7 @@ No `variant` prop. Figma's `Detail view` has one axis, `Status` (`default` / `me
 
 ## Composition with other components
 
-- **`GoalSetting`** (`components/app/goal-setting`): embedded with `showHeader={false} showSaveButton={false}` for the "Known for Now/Next" section. Without a Save button, `GoalSetting`'s internal `hasSavedGoal` never updates past its `defaultGoal` — goal edits made elsewhere in the app, not inside this panel.
+- **`GoalSetting`** (`components/app/goal-setting`): embedded with `showHeader={false} showSaveButton={false} showSelfName={false}` for the "Known for Now/Next" section — `showSelfName` is off here specifically because this panel's own header row above it already shows the self's name (`role`); the Create Self/Edit Goal dialogs that use `GoalSetting` elsewhere leave it on. Without a Save button, `GoalSetting`'s internal `hasSavedGoal` never updates past its `defaultGoal` — goal edits made elsewhere in the app, not inside this panel.
 - **`Divider`** (`components/app/goal-setting`): the rule between the header and the goal section.
 - **`Button`** (`components/ui/button`, `variant="primary"`): the "Create contents" action only — the "..." trigger and dropdown items are plain `<button>`s (see Structure).
 

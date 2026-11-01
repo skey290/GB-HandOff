@@ -40,6 +40,8 @@ export interface DateSelectProps {
   events?: Record<string, CalendarEventType>;
   /** Forces the popover calendar dark regardless of the site theme. Turn off in contexts where Figma draws the surrounding UI light (e.g. `PostingModal`) */
   shouldForceDark?: boolean;
+  /** Portal target for the popover calendar. Radix portals to `document.body` by default, which escapes a forced `colorScheme`/`shouldForceDark={false}` ancestor and falls back to ambient (OS-driven) tokens — pass the themed container down so the calendar always matches it instead */
+  container?: HTMLElement | null;
 }
 
 function formatDate(date: Date): string {
@@ -63,6 +65,7 @@ export function DateSelect({
   disabledDates,
   events,
   shouldForceDark = true,
+  container,
 }: DateSelectProps) {
   const [open, setOpen] = React.useState(false);
   const generatedId = React.useId();
@@ -103,7 +106,7 @@ export function DateSelect({
             </span>
           </button>
         </PopoverPrimitive.Trigger>
-        <PopoverPrimitive.Portal>
+        <PopoverPrimitive.Portal container={container ?? undefined}>
           <PopoverPrimitive.Content
             align="start"
             sideOffset={8}

@@ -11,7 +11,7 @@ A single tile in Self's image gallery grid. Which look it renders is derived ent
 | ------------------ | ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
 | Empty (upload)     | `image` omitted                                   | A dashed upload tile with a file input (or a plain button, see `onEmptyClick`)                             |
 | Empty compact      | `image` omitted, `isCompact` given                | 104×104 square version of the above, icon-only — `emptyLabel` becomes `aria-label` instead of visible text |
-| Default (filled)   | `image` given, no `title`/`isSelected`/`onRemove` | Image + optional `date` label + optional `...` menu                                                        |
+| Default (filled)   | `image` given, no `title`/`isSelected`/`onRemove` | Image + optional `date` label + optional `...` menu + optional "Main" badge (`isMainPortrait`)             |
 | Selectable         | `image` given, `isSelected` given (even `false`)  | Image + a checkbox indicator, clickable/keyboard-toggleable                                                |
 | Removable          | `image` + `onRemove` given                        | Plain image + a remove (×) badge, no checkbox/menu/date — `isCompact` for the 104×104 square version       |
 | Style card         | `image` + `title` given                           | Image + a text panel (`title`/`description`) + always a checkbox indicator                                 |
@@ -32,6 +32,16 @@ A single tile in Self's image gallery grid. Which look it renders is derived ent
   image={asset.url}
   alt={asset.alt}
   date={asset.date}
+  menuOptions={MENU_OPTIONS}
+  onSelectMenuOption={(value) => handleMenuAction(value)}
+/>
+
+// Self Portrait grid — "Main" badge marks the self's current main portrait
+<AssetGalleryCard
+  image={asset.url}
+  alt={asset.alt}
+  date={asset.date}
+  isMainPortrait={asset.src === mainPortraitSrc}
   menuOptions={MENU_OPTIONS}
   onSelectMenuOption={(value) => handleMenuAction(value)}
 />
@@ -100,6 +110,7 @@ A single tile in Self's image gallery grid. Which look it renders is derived ent
 | `image`              | `string`                      | —                     | Image URL. Omitted renders the empty upload card                                                                                                                                                                                                                |
 | `alt`                | `string`                      | `""`                  | Alt text for the image                                                                                                                                                                                                                                          |
 | `date`               | `string`                      | —                     | Date label on the filled card. Ignored on the style card                                                                                                                                                                                                        |
+| `isMainPortrait`     | `boolean`                     | `false`               | Shows a "Main" badge in the bottom-left corner — marks this as the self's current main portrait. Ignored on the style/empty/removable looks                                                                                                                     |
 | `onUpload`           | `(file: File) => void`        | —                     | Called with the selected file when uploading via the empty card. Ignored when `onEmptyClick` is given                                                                                                                                                           |
 | `emptyLabel`         | `string`                      | `"Upload Your Image"` | Label shown on the empty card. On the compact empty card it's hidden visually but still exposed as `aria-label`                                                                                                                                                 |
 | `onEmptyClick`       | `() => void`                  | —                     | Given, the empty card becomes a plain button that calls this instead of rendering a file input — for callers (e.g. a gallery dialog) that open their own picker rather than uploading a file directly                                                           |
@@ -134,3 +145,4 @@ A single tile in Self's image gallery grid. Which look it renders is derived ent
 - The compact title binds to Figma's `Text-xs/Semi Bold` text style and the `text/default` color variable — the same `--gb-text-xs`/`--gb-font-weight-semibold`/`--gb-text-default` tokens this component already uses elsewhere, just applied as a named style in Figma.
 - `onRemove` takes priority over the default filled look whenever it's given on a non-style-card image — there's no way to combine a removable badge with a checkbox or `...` menu, matching Figma's `Style=removable compact` (no such combined variant exists).
 - The remove button (`.removeButton`, 20×20, `×` icon) is the same size/position at both card sizes — only the image area switches between the full `.imageClip` and the compact `.compactImageClip`.
+- `isMainPortrait` renders a `Badge` (`variant="default"`) at `.mainBadge`, bottom-left — the host decides which image is "main" by comparing its `src` against whatever it tracks as the self's main portrait (e.g. `image.src === mainPortraitSrc`); the card itself holds no notion of "main".

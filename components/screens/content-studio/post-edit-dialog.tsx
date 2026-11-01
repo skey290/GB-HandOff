@@ -3,11 +3,17 @@
 import * as React from "react";
 
 import { PostingModalDialog } from "./posting-modal-dialog";
+import { IMAGE_POOL } from "@/components/screens/content-studio/data";
 import {
   formatPostDate,
   type Post,
   type PostPlatform,
 } from "@/components/screens/content-studio/ui/PostCard";
+
+// PostingModal's edit-flow chip is Image(0)/Text(1) — no "All", since there's
+// already a post to switch the type of rather than generate from scratch.
+const EDIT_POST_TYPE_IMAGE = 0;
+const EDIT_POST_TYPE_TEXT = 1;
 
 export interface PostEditDialogProps {
   post: Post | null;
@@ -40,12 +46,19 @@ export function PostEditDialog({
   const [draft, setDraft] = React.useState<Post | null>(post);
   const [activeTabIndex, setActiveTabIndex] = React.useState(0);
   const [rewriteInstruction, setRewriteInstruction] = React.useState("");
+  const [postTypeIndex, setPostTypeIndex] =
+    React.useState(EDIT_POST_TYPE_IMAGE);
 
   React.useEffect(() => {
     if (open && post) {
       setDraft(post);
       setActiveTabIndex(0);
       setRewriteInstruction("");
+      setPostTypeIndex(
+        post.contentType === "text"
+          ? EDIT_POST_TYPE_TEXT
+          : EDIT_POST_TYPE_IMAGE,
+      );
     }
   }, [open, post]);
 
@@ -67,9 +80,20 @@ export function PostEditDialog({
 
   const handleApplyChanges = () => {
     if (!rewriteInstruction.trim()) return;
-    setDraft((prev) =>
-      prev ? { ...prev, caption: rewriteInstruction } : prev,
-    );
+    setDraft((prev) => {
+      if (!prev) return prev;
+      const isText = postTypeIndex === EDIT_POST_TYPE_TEXT;
+      return {
+        ...prev,
+        caption: rewriteInstruction,
+        contentType: isText ? "text" : "image",
+        images: isText
+          ? []
+          : prev.images.length > 0
+            ? prev.images
+            : [IMAGE_POOL[0]!],
+      };
+    });
     setRewriteInstruction("");
   };
 
@@ -104,6 +128,8 @@ export function PostEditDialog({
       }
       rewriteInstruction={rewriteInstruction}
       onRewriteInstructionChange={setRewriteInstruction}
+      postTypeIndex={postTypeIndex}
+      onPostTypeChange={setPostTypeIndex}
       onApplyChanges={handleApplyChanges}
       onSaveChanges={() => onSaveChanges(draft)}
       onScheduleDraft={() => onScheduleDraft(draft)}

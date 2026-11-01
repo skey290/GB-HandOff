@@ -12,6 +12,9 @@ import {
 const SELVES = [
   { value: "self-1", label: "Data Scientist" },
   { value: "self-2", label: "Office Worker" },
+  // No INITIAL_PORTRAITS entry on purpose — demoes a self still being
+  // created, whose Self Portrait grid starts out empty (see CancelCreatingSelfWarning).
+  { value: "self-3", label: "New Self" },
 ];
 
 const INITIAL_PORTRAITS: Record<string, AssetGalleryPortraitImage[]> = {
@@ -69,7 +72,7 @@ function ControlledAssetGalleryDialog(props: AssetGalleryDialogProps) {
         props.onSelfIdChange(nextId);
       }}
       portraitImages={portraitsBySelfId[selfId] ?? []}
-      onGenerate={(src) => {
+      onGenerate={(src, isFirstOfBatch) => {
         setPortraitsBySelfId((prev) => ({
           ...prev,
           [selfId]: [
@@ -77,8 +80,11 @@ function ControlledAssetGalleryDialog(props: AssetGalleryDialogProps) {
             { id: `generated-${Date.now()}`, src, alt: "Generated portrait" },
           ],
         }));
-        props.onGenerate(src);
+        props.onGenerate(src, isFirstOfBatch);
       }}
+      // Mirrors the Self app's own default: the first portrait in the list is
+      // the main one until "Set as main Portrait" says otherwise.
+      mainPortraitSrc={portraitsBySelfId[selfId]?.[0]?.src}
       onSetMainPortrait={props.onSetMainPortrait}
       onReplacePortrait={(imageId, newSrc) => {
         setPortraitsBySelfId((prev) => ({
@@ -140,6 +146,8 @@ function ControlledAssetGalleryDialog(props: AssetGalleryDialogProps) {
         props.onDeleteReferenceImage(imageId);
       }}
       onUseReferenceImages={props.onUseReferenceImages}
+      isCreatingSelf={props.isCreatingSelf}
+      onCancelCreating={props.onCancelCreating}
       colorScheme={isDark ? "dark" : "light"}
     />
   );
@@ -157,6 +165,7 @@ const SELF_APP_SOURCE = `<AssetGalleryDialog
   onSelfIdChange={setSelfId}
   portraitImages={portraitImagesBySelfId[selfId] ?? []}
   onGenerate={handleGenerate}
+  mainPortraitSrc={selves.find((self) => self.id === selfId)?.image}
   onSetMainPortrait={handleSetMainPortrait}
   onReplacePortrait={handleReplacePortrait}
   onDeletePortraitImage={handleDeletePortraitImage}
@@ -167,6 +176,10 @@ const SELF_APP_SOURCE = `<AssetGalleryDialog
   onDeleteReferenceImage={handleDeleteReferenceImage}
   onUseReferenceImages={handleUseReferenceImages}
   isPickerMode={false}
+  // Only set while this Asset Gallery session is for a self still being
+  // created — see handleCancelCreatingSelf in app/self/page.tsx.
+  isCreatingSelf={galleryOpenForSelfId === creatingSelfId}
+  onCancelCreating={handleCancelCreatingSelf}
 />`;
 
 const CONTENT_STUDIO_SOURCE = `// AssetGalleryDialog's "for [self]" selector has no meaning here — the
@@ -210,7 +223,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Asset management modal shared by the Self app (browse/manage a Self's portrait + references) and Content Studio (pick reference images for a post). Covers browsing both tabs, uploading or editing a Self Portrait via a 2x2 style pick, creating a reference from a preset, and the delete-blocked warning when only one Self Portrait remains.",
+          'Asset management modal shared by the Self app (browse/manage a Self\'s portrait + references) and Content Studio (pick reference images for a post). Covers browsing both tabs, uploading or editing a Self Portrait via a 2x2 style pick, creating a reference from a preset, the delete-blocked warning when only one Self Portrait remains, the "Main" badge marking the current main portrait, and — every close path (X, outside click, Escape all funnel through the same check) — the unsaved-upload and cancel-creating-self confirmations.',
         story:
           "Canvas uses a demo-only local-state wrapper (open state + a per-self portrait map) so the flow works in isolation — the dialog is open immediately, no trigger button needed. The code below is what a real page writes — see docs/components/asset-gallery-dialog.md. Toggle isPickerMode to see Content Studio's call site instead of the Self app's.",
       },
@@ -234,6 +247,7 @@ const meta = {
     // selector — it replaces the "for" dropdown with a static label. Set it
     // here to preview that look instead of switching files.
     selfLabel: { control: "text" },
+    isCreatingSelf: { control: "boolean" },
   },
   args: {
     open: true,
@@ -255,6 +269,8 @@ const meta = {
     isPickerMode: false,
     initialTabIndex: 0,
     selfLabel: undefined,
+    isCreatingSelf: false,
+    onCancelCreating: fn(),
   },
   render: (args) => <ControlledAssetGalleryDialog {...args} />,
 } satisfies Meta<typeof AssetGalleryDialog>;
@@ -324,6 +340,50 @@ export const ReferenceCreateStep: Story = {
     const file = new File(["dummy"], "photo.png", { type: "image/png" });
     await userEvent.upload(fileInput, file);
     await canvas.findByText("Create My Reference");
+  },
+};
+
+export const UnsavedUploadDiscardWarning: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Closing (X) while a fresh upload + style pick is still pending — nothing is committed until Create — asks "Discard this Self Portrait?" instead of silently losing it.',
+      },
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement.ownerDocument.body);
+    const fileInput = canvasElement.ownerDocument.querySelector(
+      'input[type="file"]',
+    ) as HTMLInputElement;
+    const file = new File(["dummy"], "photo.png", { type: "image/png" });
+    await userEvent.upload(fileInput, file);
+    await userEvent.click(await canvas.findByRole("button", { name: "Close" }));
+    await canvas.findByText("Discard this Self Portrait?");
+  },
+};
+
+export const CancelCreatingSelfWarning: Story = {
+  args: {
+    // "New Self" has no INITIAL_PORTRAITS seed, so its Self Portrait grid
+    // starts out empty — the state `app/self/page.tsx` is in right after the
+    // "My goal" step, before any portrait has been generated yet.
+    selfId: "self-3",
+    isCreatingSelf: true,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'While `isCreatingSelf` and the Self Portrait grid is still empty, closing (by any means) asks "Cancel creating this self?" instead — confirming calls `onCancelCreating` so the host can roll the in-progress self back. Once a portrait exists, this self is "finished" and the dialog closes normally again.',
+      },
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement.ownerDocument.body);
+    await userEvent.click(await canvas.findByRole("button", { name: "Close" }));
+    await canvas.findByText("Cancel creating this self?");
   },
 };
 
